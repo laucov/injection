@@ -49,50 +49,72 @@ class Resolver
      */
     public function call(callable $callable): mixed
     {
-        // if (is_string($callable)) {
-        //     // @todo Global function or static method...
-        // } elseif (is_array($callable)) {
-        //     // @todo Instance method or static method...
-        // } elseif (is_object($callable)) {
-        //     // @todo Closure or invokable instance...
-        // }
-
         // Get parameters.
         $reflection = new \ReflectionFunction($callable);
         $parameters = $reflection->getParameters();
 
         // Parse parameter types.
         $arguments = [];
-        foreach ($parameters as $parameter) {
-            $type = $parameter->getType();
+        foreach ($parameters as $param) {
+            $type = $param->getType();
             if ($type === null) {
                 // Handle untyped parameter.
-                if ($parameter->isDefaultValueAvailable()) {
-                    $arguments[] = $parameter->getDefaultValue();
+                if ($param->isDefaultValueAvailable()) {
+                    $arguments[] = $param->getDefaultValue();
                 } else {
                     $arguments[] = null;
                 }
             } elseif ($type instanceof \ReflectionNamedType) {
-                // Handle typed parameter.
-                $name = $type->getName();
-                if ($this->repo->hasDependency($name)) {
-                    // Handle valid type.
-                    $arguments[] = $this->repo->getValue($name);
-                    if ($parameter->isVariadic()) {
-                        while ($this->repo->hasValue($name)) {
-                            $arguments[] = $this->repo->getValue($name);
-                        }
+                // Handle named type parameter.
+                $this->pushArgument($arguments, $type, $param);
+            } elseif ($type instanceof \ReflectionUnionType) {
+                // Handle union type parameter.
+                $subtypes = $type->getTypes();
+                foreach ($subtypes as $subtype) {
+                    if ($this->pushArgument($arguments, $subtype, $param)) {
+                        break;
                     }
-                } elseif ($parameter->isDefaultValueAvailable()) {
-                    // Handle invalid type with default value.
-                    $arguments[] = $parameter->getDefaultValue();
-                } elseif ($type->allowsNull()) {
-                    // Handle invalid nullable type.
-                    $arguments[] = null;
                 }
             }
         }
 
         return $callable(...$arguments);
+    }
+
+    /**
+     * Push one or more arguments to the given list from reflections.
+     */
+    protected function pushArgument(
+        array &$arguments,
+        \ReflectionNamedType $type,
+        \ReflectionParameter $parameter,
+    ): bool {
+        // Get type name.
+        $name = $type->getName();
+
+        // Handle valid type.
+        if ($this->repo->hasDependency($name)) {
+            $arguments[] = $this->repo->getValue($name);
+            if ($parameter->isVariadic()) {
+                while ($this->repo->hasValue($name)) {
+                    $arguments[] = $this->repo->getValue($name);
+                }
+            }
+            return true;
+        }
+
+        // Check for default value.
+        if ($parameter->isDefaultValueAvailable()) {
+            $arguments[] = $parameter->getDefaultValue();
+            return true;
+        }
+        
+        // Check for nullability
+        if ($type->allowsNull()) {
+            $arguments[] = null;
+            return true;
+        }
+
+        return false;
     }
 }
