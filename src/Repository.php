@@ -52,6 +52,14 @@ class Repository
     }
 
     /**
+     * Check whether a dependency type is registered.
+     */
+    public function hasDependency(string $name): bool
+    {
+        return array_key_exists($name, $this->dependencies);
+    }
+
+    /**
      * Check whether new values can be outputted for a dependency.
      */
     public function hasValue(string $name): bool

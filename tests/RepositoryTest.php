@@ -42,6 +42,7 @@ class RepositoryTest extends TestCase
 
     /**
      * @covers ::getValue
+     * @covers ::hasDependency
      * @covers ::hasValue
      * @covers ::setFactory
      * @covers ::setIterable
@@ -87,6 +88,12 @@ class RepositoryTest extends TestCase
         $this->assertSame(0, $this->repo->getValue('int'));
         $this->assertSame(1, $this->repo->getValue('int'));
         $this->assertSame(2, $this->repo->getValue('int'));
+
+        // Check dependency existence.
+        $this->assertTrue($this->repo->hasDependency('string'));
+        $this->assertTrue($this->repo->hasDependency('int'));
+        $this->assertTrue($this->repo->hasDependency('float'));
+        $this->assertFalse($this->repo->hasDependency('array'));
     }
 
     protected function setUp(): void
