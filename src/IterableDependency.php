@@ -28,13 +28,18 @@
 
 namespace Laucov\Injection;
 
-use Laucov\Injection\Interfaces\DependencyInterface;
+use Laucov\Injection\Interfaces\DynamicDependencyInterface;
 
 /**
  * Stores an iterable as a dependency.
  */
-class IterableDependency implements DependencyInterface
+class IterableDependency implements DynamicDependencyInterface
 {
+    /**
+     * Whether the array has returned its last value.
+     */
+    protected bool $ended;
+
     /**
      * Registered iterable.
      */
@@ -46,6 +51,7 @@ class IterableDependency implements DependencyInterface
     public function __construct(mixed $source)
     {
         $this->iterable = $source;
+        $this->ended = count($this->iterable) < 1;
     }
 
     /**
@@ -53,14 +59,28 @@ class IterableDependency implements DependencyInterface
      */
     public function get(): mixed
     {
+        // Reset the "ended" if getting after reset.
+        if ($this->ended) {
+            $this->ended = false;
+        }
+
         // Get current value.
         $value = current($this->iterable);
 
         // Set the next value.
         if (!next($this->iterable)) {
+            $this->ended = true;
             reset($this->iterable);
         }
 
         return $value;
+    }
+
+    /**
+     * Check if there are new values to come.
+     */
+    public function has(): bool
+    {
+        return !$this->ended;
     }
 }

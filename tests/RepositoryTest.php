@@ -42,6 +42,7 @@ class RepositoryTest extends TestCase
 
     /**
      * @covers ::getValue
+     * @covers ::hasValue
      * @covers ::setFactory
      * @covers ::setIterable
      * @covers ::setValue
@@ -49,6 +50,7 @@ class RepositoryTest extends TestCase
      * @uses Laucov\Injection\FactoryDependency::get
      * @uses Laucov\Injection\IterableDependency::__construct
      * @uses Laucov\Injection\IterableDependency::get
+     * @uses Laucov\Injection\IterableDependency::has
      * @uses Laucov\Injection\ValueDependency::__construct
      * @uses Laucov\Injection\ValueDependency::get
      */
@@ -64,12 +66,19 @@ class RepositoryTest extends TestCase
         // Set iterable values.
         $this->repo->setIterable('float', [0.00, 0.25, 0.50, 0.75, 1.00]);
         $this->assertSame(0.00, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(0.25, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(0.50, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(0.75, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(1.00, $this->repo->getValue('float'));
+        $this->assertFalse($this->repo->hasValue('float'));
         $this->assertSame(0.00, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(0.25, $this->repo->getValue('float'));
+        $this->assertTrue($this->repo->hasValue('float'));
 
         // Set factory function.
         // Also test if can replace a type in the repository (replacing `int`).

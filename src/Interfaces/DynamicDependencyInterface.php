@@ -26,36 +26,15 @@
  * @copyright © 2024 Laucov Serviços de Tecnologia da Informação Ltda.
  */
 
-declare(strict_types=1);
-
-namespace Tests;
-
-use Laucov\Injection\Interfaces\DynamicDependencyInterface;
-use Laucov\Injection\IterableDependency;
-use PHPUnit\Framework\TestCase;
+namespace Laucov\Injection\Interfaces;
 
 /**
- * @coversDefaultClass \Laucov\Injection\IterableDependency
+ * Provides dynamic values for a specific dependency source.
  */
-class IterableDependencyTest extends TestCase
+interface DynamicDependencyInterface extends DependencyInterface
 {
     /**
-     * @covers ::__construct
-     * @covers ::get
-     * @covers ::has
+     * Check if there are new values to come.
      */
-    public function testCanSetAndGet(): void
-    {
-        $dep = new IterableDependency(['foo', 'bar', 'baz']);
-        $this->assertInstanceOf(DynamicDependencyInterface::class, $dep);
-        $this->assertTrue($dep->has());
-        $this->assertSame('foo', $dep->get());
-        $this->assertTrue($dep->has());
-        $this->assertSame('bar', $dep->get());
-        $this->assertTrue($dep->has());
-        $this->assertSame('baz', $dep->get());
-        $this->assertFalse($dep->has());
-        $this->assertSame('foo', $dep->get());
-        $this->assertTrue($dep->has());
-    }
+    public function has(): bool;
 }
