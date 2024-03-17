@@ -77,7 +77,7 @@ class Resolver
             $this->pushUntypedArgument($arguments, $parameter);
             return;
         }
-        
+
         // Handle named type parameter.
         if ($type instanceof \ReflectionNamedType) {
             $this->pushNamedTypeArgument($arguments, $type, $parameter);
@@ -116,7 +116,7 @@ class Resolver
             $arguments[] = $parameter->getDefaultValue();
             return;
         }
-        
+
         // Check nullability
         if ($type->allowsNull()) {
             $arguments[] = null;
