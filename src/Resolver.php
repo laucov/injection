@@ -53,28 +53,19 @@ class Resolver
         $reflection = new \ReflectionFunction($callable);
         $parameters = $reflection->getParameters();
 
-        // Parse parameter types.
+        // Parse parameters.
         $arguments = [];
         foreach ($parameters as $param) {
+            // Get type.
             $type = $param->getType();
             if ($type === null) {
                 // Handle untyped parameter.
-                if ($param->isDefaultValueAvailable()) {
-                    $arguments[] = $param->getDefaultValue();
-                } else {
-                    $arguments[] = null;
-                }
+                $this->pushUntypedArgument($arguments, $param);
             } elseif ($type instanceof \ReflectionNamedType) {
                 // Handle named type parameter.
-                $this->pushArgument($arguments, $type, $param);
-            } elseif ($type instanceof \ReflectionUnionType) {
-                // Handle union type parameter.
-                $subtypes = $type->getTypes();
-                foreach ($subtypes as $subtype) {
-                    if ($this->pushArgument($arguments, $subtype, $param)) {
-                        break;
-                    }
-                }
+                $this->pushNamedTypeArgument($arguments, $type, $param);
+            } else {
+                // ...
             }
         }
 
@@ -82,13 +73,38 @@ class Resolver
     }
 
     /**
-     * Push one or more arguments to the given list from reflections.
+     * Push one or more items to the argument list from a reflection parameter.
      */
     protected function pushArgument(
         array &$arguments,
+        \ReflectionParameter $parameter,
+    ): void {
+        // Get type.
+        $type = $parameter->getType();
+
+        // Handle untyped parameter.
+        if ($type === null) {
+            $this->pushUntypedArgument($arguments, $parameter);
+            return;
+        }
+        
+        // Handle named type parameter.
+        if ($type instanceof \ReflectionNamedType) {
+            $this->pushNamedTypeArgument($arguments, $type, $parameter);
+            return;
+        }
+
+        // @todo Throw exception due to unsupported union/intersection types.
+    }
+
+    /**
+     * Push one or more items to the argument list with a named type.
+     */
+    protected function pushNamedTypeArgument(
+        array &$arguments,
         \ReflectionNamedType $type,
         \ReflectionParameter $parameter,
-    ): bool {
+    ): void {
         // Get type name.
         $name = $type->getName();
 
@@ -100,21 +116,38 @@ class Resolver
                     $arguments[] = $this->repo->getValue($name);
                 }
             }
-            return true;
+            return;
         }
 
         // Check for default value.
         if ($parameter->isDefaultValueAvailable()) {
             $arguments[] = $parameter->getDefaultValue();
-            return true;
+            return;
         }
         
-        // Check for nullability
+        // Check nullability
         if ($type->allowsNull()) {
             $arguments[] = null;
-            return true;
+            return;
         }
 
-        return false;
+        // @todo Throw exception due to unregistered required type.
+    }
+
+    /**
+     * Push one or more items to the argument list without a type.
+     */
+    protected function pushUntypedArgument(
+        array &$arguments,
+        \ReflectionParameter $parameter,
+    ): void {
+        // Check for default value.
+        if ($parameter->isDefaultValueAvailable()) {
+            $arguments[] = $parameter->getDefaultValue();
+            return;
+        }
+
+        // Push null.
+        $arguments[] = null;
     }
 }

@@ -91,63 +91,14 @@ class ResolverTest extends TestCase
                 fn ($untyped) => $untyped,
                 null,
             ],
-            // Test union types.
-            // PHP does not sort the parameter types by declaration order:
-            // These are listed first in the order they're declared:
-            // - Classes, interfaces and traits
-            // - parent
-            // - self
-            // These are listed last in the following order:
-            // - static
-            // - callable
-            // - object
-            // - array
-            // - string
-            // - int
-            // - float
-            // - bool
-            // - false
-            // - true
-            // - null
-            // Type "iterable" is splitted into "array" and "Traversable".
-            [
-                fn (int|string $v) => $v,
-                'John',
-            ],
-            [
-                fn (string|int $v) => $v,
-                'John',
-            ],
-            [
-                fn (A|B $obj) => $obj::class,
-                A::class,
-            ],
-            [
-                fn (B|A $obj) => $obj::class,
-                B::class,
-            ],
-            [
-                // Treated as "iterable"
-                fn (iterable $i) => implode('', $i),
-                'foobar',
-            ],
-            [
-                // Treated as "Traversable|array"
-                // Note: "Traversable" has preference over "array"
-                fn (iterable|string $i) => implode('', $i),
-                'barfoo',
-            ],
-            [
-                fn (float|bool $v) => $v,
-                true,
-            ],
-            // @todo Test intersection types.
         ];
     }
 
     /**
      * @covers ::call
      * @covers ::pushArgument
+     * @covers ::pushNamedTypeArgument
+     * @covers ::pushUntypedArgument
      * @uses Laucov\Injection\IterableDependency::__construct
      * @uses Laucov\Injection\IterableDependency::get
      * @uses Laucov\Injection\IterableDependency::has
