@@ -68,7 +68,8 @@ class IterableDependency implements DynamicDependencyInterface
         $value = current($this->iterable);
 
         // Set the next value.
-        if (!next($this->iterable)) {
+        next($this->iterable);
+        if (key($this->iterable) === null) {
             $this->ended = true;
             reset($this->iterable);
         }
