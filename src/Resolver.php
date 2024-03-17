@@ -56,17 +56,7 @@ class Resolver
         // Parse parameters.
         $arguments = [];
         foreach ($parameters as $param) {
-            // Get type.
-            $type = $param->getType();
-            if ($type === null) {
-                // Handle untyped parameter.
-                $this->pushUntypedArgument($arguments, $param);
-            } elseif ($type instanceof \ReflectionNamedType) {
-                // Handle named type parameter.
-                $this->pushNamedTypeArgument($arguments, $type, $param);
-            } else {
-                // ...
-            }
+            $this->pushArgument($arguments, $param);
         }
 
         return $callable(...$arguments);
@@ -95,6 +85,8 @@ class Resolver
         }
 
         // @todo Throw exception due to unsupported union/intersection types.
+        $message = 'Cannot resolve union or intersection type parameter %s.';
+        throw new \RuntimeException(sprintf($message, (string) $type));
     }
 
     /**
@@ -131,7 +123,9 @@ class Resolver
             return;
         }
 
-        // @todo Throw exception due to unregistered required type.
+        // Fail to resolve.
+        $message = 'Could not resolve required argument of type %s.';
+        throw new \RuntimeException(sprintf($message, $name));
     }
 
     /**

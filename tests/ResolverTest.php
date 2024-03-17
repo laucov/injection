@@ -41,7 +41,65 @@ class ResolverTest extends TestCase
 {
     protected Resolver $resolver;
 
-    public function callableProvider(): array
+    /**
+     * @covers ::__construct
+     * @covers ::call
+     * @covers ::pushArgument
+     * @covers ::pushNamedTypeArgument
+     * @covers ::pushUntypedArgument
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\IterableDependency::get
+     * @uses Laucov\Injection\IterableDependency::has
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::hasValue
+     * @uses Laucov\Injection\Repository::setIterable
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     * @dataProvider validCallableProvider
+     */
+    public function testCanResolveDependencies(callable $fn, mixed $out): void
+    {
+        $this->assertSame($out, $this->resolver->call($fn));
+    }
+
+    /**
+     * @covers ::pushArgument
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\Repository::setIterable
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::call
+     * @uses Laucov\Injection\ValueDependency::__construct
+     */
+    public function testCannotResolveUnionOrIntersectionTypes(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $callable = fn (string|int $union_parameter) => $union_parameter;
+        $this->resolver->call($callable);
+    }
+
+    /**
+     * @covers ::pushNamedTypeArgument
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::setIterable
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::call
+     * @uses Laucov\Injection\Resolver::pushArgument
+     * @uses Laucov\Injection\ValueDependency::__construct
+     */
+    public function testRequiredParametersMustHaveAvailableTypes(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $callable = fn (float $required_float) => $required_float;
+        $this->resolver->call($callable);
+    }
+
+    public function validCallableProvider(): array
     {
         return [
             // Test simple dynamic dependencies.
@@ -92,29 +150,6 @@ class ResolverTest extends TestCase
                 null,
             ],
         ];
-    }
-
-    /**
-     * @covers ::call
-     * @covers ::pushArgument
-     * @covers ::pushNamedTypeArgument
-     * @covers ::pushUntypedArgument
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\IterableDependency::get
-     * @uses Laucov\Injection\IterableDependency::has
-     * @uses Laucov\Injection\Repository::getValue
-     * @uses Laucov\Injection\Repository::hasDependency
-     * @uses Laucov\Injection\Repository::hasValue
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\ValueDependency::__construct
-     * @uses Laucov\Injection\ValueDependency::get
-     * @dataProvider callableProvider
-     */
-    public function testCanResolveDependencies(callable $fn, mixed $out): void
-    {
-        $this->assertSame($out, $this->resolver->call($fn));
     }
 
     protected function setUp(): void
