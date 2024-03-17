@@ -34,6 +34,13 @@ namespace Laucov\Injection;
 class Validator
 {
     /**
+     * Manually allowed or forbidden types.
+     * 
+     * @var array<string, bool>
+     */
+    protected array $allowed = [];
+
+    /**
      * Create the validator instance.
      */
     public function __construct(
@@ -42,6 +49,34 @@ class Validator
          */
         protected Repository $repo,
     ) {
+    }
+
+    /**
+     * Allow a type.
+     * 
+     * Allows the type even if the repository doesn't have it.
+     */
+    public function allow(string $type): void
+    {
+        $this->allowed[$type] = true;
+    }
+
+    /**
+     * Remove a previously manually allowed type.
+     */
+    public function disallow(string $type): void
+    {
+        unset($this->allowed[$type]);
+    }
+
+    /**
+     * Forbid a type.
+     * 
+     * Disallow the type even if the repository has it.
+     */
+    public function forbid(string $type): void
+    {
+        $this->allowed[$type] = false;
     }
 
     /**
@@ -77,7 +112,10 @@ class Validator
 
         // Validate named type.
         if ($type instanceof \ReflectionNamedType) {
-            return $this->repo->hasDependency($type->getName())
+            $name = $type->getName();
+            $is_allowed = $this->allowed[$name] ?? null;
+            return $is_allowed === true
+                || ($this->repo->hasDependency($name) && $is_allowed !== false)
                 || $parameter->isDefaultValueAvailable()
                 || $parameter->allowsNull();
         }

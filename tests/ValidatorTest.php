@@ -51,11 +51,16 @@ class ValidatorTest extends TestCase
             [fn (int $a, null|float $b) => '', true],
             [fn (int $a, null|float $b) => '', true],
             [fn ($a) => '', true],
+            [fn (array $a) => '', true],
+            [fn (object $a) => '', false],
         ];
     }
 
     /**
      * @covers ::__construct
+     * @covers ::allow
+     * @covers ::disallow
+     * @covers ::forbid
      * @covers ::validate
      * @uses Laucov\Injection\IterableDependency::__construct
      * @uses Laucov\Injection\Repository::hasDependency
@@ -77,10 +82,19 @@ class ValidatorTest extends TestCase
 
     protected function setUp(): void
     {
+        // Create repository.
         $repo = new Repository();
         $repo->setIterable('string', ['a', 'b', 'c', 'd']);
         $repo->setValue('int', 123);
+        $repo->setValue('float', 1.234);
 
+        // Create validator.
         $this->validator = new Validator($repo);
+
+        // Add allowed types without creating dependencies.
+        $this->validator->allow('array');
+        $this->validator->allow('object');
+        $this->validator->disallow('object');
+        $this->validator->forbid('float');
     }
 }
