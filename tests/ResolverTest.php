@@ -141,7 +141,7 @@ class ResolverTest extends TestCase
         $output = '42: John, Mark, James';
         $this->assertSame($output, $this->resolver->call($callable));
     }
-    
+
     /**
      * @covers ::__construct
      * @covers ::resolve

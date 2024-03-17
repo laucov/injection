@@ -53,6 +53,7 @@ class ValidatorTest extends TestCase
             [fn ($a) => '', true],
             [fn (array $a) => '', true],
             [fn (object $a) => '', false],
+            [fn (int|string $a) => '', false],
         ];
     }
 
@@ -62,11 +63,11 @@ class ValidatorTest extends TestCase
      * @covers ::disallow
      * @covers ::forbid
      * @covers ::validate
+     * @covers ::validateParameter
      * @uses Laucov\Injection\IterableDependency::__construct
      * @uses Laucov\Injection\Repository::hasDependency
      * @uses Laucov\Injection\Repository::setIterable
      * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Validator::validateParameter
      * @uses Laucov\Injection\ValueDependency::__construct
      * @dataProvider callableValidationProvider
      */
