@@ -41,6 +41,59 @@ class ResolverTest extends TestCase
 {
     protected Resolver $resolver;
 
+    public function callableProvider(): array
+    {
+        return [
+            // Test simple dynamic dependencies.
+            [
+                fn (string $a, string $b) => '',
+                ['John', 'Mark'],
+            ],
+            // Test dynamic dependency with variadic parameter.
+            [
+                fn (string ...$names) => '',
+                ['John', 'Mark', 'James'],
+            ],
+            // Test static dependency with variadic parameter.
+            [
+                fn (int $num, int ...$nums) => '',
+                [42, 42],
+            ],
+            // Test invalid dependency with nullable parameter.
+            [
+                fn (?\PDO $pdo) => '',
+                [null],
+            ],
+            [
+                fn (null|\PDO $pdo) => '',
+                [null],
+            ],
+            // Test valid dependency with nullable parameter.
+            [
+                fn (?string $string) => '',
+                ['John'],
+            ],
+            [
+                fn (null|string $string) => '',
+                ['John'],
+            ],
+            // Test invalid dependency with default value.
+            [
+                fn (?float $a = 2.45, ?string $b = 'Bob') => '',
+                [2.45, 'John'],
+            ],
+            // Test untyped parameter.
+            [
+                fn ($untyped = 'DEFAULT') => '',
+                ['DEFAULT'],
+            ],
+            [
+                fn ($untyped) => '',
+                [null],
+            ],
+        ];
+    }
+
     /**
      * @covers ::instantiate
      * @uses Laucov\Injection\IterableDependency::__construct
@@ -56,7 +109,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::__construct
      * @uses Laucov\Injection\ValueDependency::get
      */
-    public function testCanResolveConstructors(): void
+    public function testCanCallConstructors(): void
     {
         $instance = $this->resolver->instantiate(MyClass::class);
         $this->assertInstanceOf(MyClass::class, $instance);
@@ -65,8 +118,33 @@ class ResolverTest extends TestCase
     }
 
     /**
-     * @covers ::__construct
      * @covers ::call
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\IterableDependency::get
+     * @uses Laucov\Injection\IterableDependency::has
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::hasValue
+     * @uses Laucov\Injection\Repository::setIterable
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::getArguments
+     * @uses Laucov\Injection\Resolver::pushArgument
+     * @uses Laucov\Injection\Resolver::pushNamedTypeArgument
+     * @uses Laucov\Injection\Resolver::resolve
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     */
+    public function testCanCallFunctions(): void
+    {
+        $callable = fn (int $n, string ...$s) => "{$n}: " . implode(', ', $s);
+        $output = '42: John, Mark, James';
+        $this->assertSame($output, $this->resolver->call($callable));
+    }
+    
+    /**
+     * @covers ::__construct
+     * @covers ::resolve
      * @covers ::getArguments
      * @covers ::pushArgument
      * @covers ::pushNamedTypeArgument
@@ -82,11 +160,17 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Resolver::__construct
      * @uses Laucov\Injection\ValueDependency::__construct
      * @uses Laucov\Injection\ValueDependency::get
-     * @dataProvider validCallableProvider
+     * @dataProvider callableProvider
      */
-    public function testCanResolveFunctions(callable $fn, mixed $output): void
+    public function testCanGetArguments(callable $fn, array $expected): void
     {
-        $this->assertSame($output, $this->resolver->call($fn));
+        $actual = $this->resolver->resolve($fn);
+        $this->assertIsArray($actual);
+        $this->assertSameSize($expected, $actual);
+        foreach ($expected as $i => $v) {
+            $this->assertArrayHasKey($i, $actual);
+            $this->assertSame($v, $actual[$i]);
+        }
     }
 
     /**
@@ -97,6 +181,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Resolver::__construct
      * @uses Laucov\Injection\Resolver::call
      * @uses Laucov\Injection\Resolver::getArguments
+     * @uses Laucov\Injection\Resolver::resolve
      * @uses Laucov\Injection\ValueDependency::__construct
      */
     public function testCannotResolveUnionOrIntersectionTypes(): void
@@ -116,6 +201,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Resolver::call
      * @uses Laucov\Injection\Resolver::getArguments
      * @uses Laucov\Injection\Resolver::pushArgument
+     * @uses Laucov\Injection\Resolver::resolve
      * @uses Laucov\Injection\ValueDependency::__construct
      */
     public function testRequiredParametersMustHaveAvailableTypes(): void
@@ -123,59 +209,6 @@ class ResolverTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $callable = fn (float $required_float) => $required_float;
         $this->resolver->call($callable);
-    }
-
-    public function validCallableProvider(): array
-    {
-        return [
-            // Test simple dynamic dependencies.
-            [
-                fn (string $a, string $b) => "{$a} and {$b}",
-                'John and Mark',
-            ],
-            // Test dynamic dependency with variadic parameter.
-            [
-                fn (string ...$names) => implode(', ', $names),
-                'John, Mark, James',
-            ],
-            // Test static dependency with variadic parameter.
-            [
-                fn (int $num, int ...$nums) => implode(', ', [$num, ...$nums]),
-                '42, 42',
-            ],
-            // Test invalid dependency with nullable parameter.
-            [
-                fn (?\PDO $pdo) => $pdo,
-                null,
-            ],
-            [
-                fn (null|\PDO $pdo) => $pdo,
-                null,
-            ],
-            // Test valid dependency with nullable parameter.
-            [
-                fn (?string $string) => $string,
-                'John',
-            ],
-            [
-                fn (null|string $string) => $string,
-                'John',
-            ],
-            // Test invalid dependency with default value.
-            [
-                fn (?float $a = 2.45, ?string $b = 'Bob') => "{$a}, {$b}",
-                '2.45, John',
-            ],
-            // Test untyped parameter.
-            [
-                fn ($untyped = 'DEFAULT') => $untyped,
-                'DEFAULT',
-            ],
-            [
-                fn ($untyped) => $untyped,
-                null,
-            ],
-        ];
     }
 
     protected function setUp(): void

@@ -49,9 +49,7 @@ class Resolver
      */
     public function call(callable $callable): mixed
     {
-        $reflection = new \ReflectionFunction($callable);
-        $arguments = $this->getArguments($reflection);
-        return $callable(...$arguments);
+        return $callable(...$this->resolve($callable));
     }
 
     /**
@@ -66,6 +64,15 @@ class Resolver
         $reflection = new \ReflectionMethod($class_name, '__construct');
         $arguments = $this->getArguments($reflection);
         return new $class_name(...$arguments);
+    }
+
+    /**
+     * Resolve the given callable's parameters.
+     */
+    public function resolve(callable $callable): array
+    {
+        $reflection = new \ReflectionFunction($callable);
+        return $this->getArguments($reflection);
     }
 
     /**
