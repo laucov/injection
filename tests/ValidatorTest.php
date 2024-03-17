@@ -54,6 +54,8 @@ class ValidatorTest extends TestCase
             [fn (array $a) => '', true],
             [fn (object $a) => '', false],
             [fn (int|string $a) => '', false],
+            [[C::class, 'a'], true],
+            [[C::class, 'b'], false],
         ];
     }
 
@@ -71,10 +73,10 @@ class ValidatorTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::__construct
      * @dataProvider callableValidationProvider
      */
-    public function testValidatesCallables(callable $fn, bool $expected): void
+    public function testValidatesCallables(callable|array $c, bool $exp): void
     {
-        $actual = $this->validator->validate($fn);
-        if ($expected) {
+        $actual = $this->validator->validate($c);
+        if ($exp) {
             $this->assertTrue($actual);
         } else {
             $this->assertFalse($actual);
@@ -97,5 +99,16 @@ class ValidatorTest extends TestCase
         $this->validator->allow('object');
         $this->validator->disallow('object');
         $this->validator->forbid('float');
+    }
+}
+
+class C
+{
+    public function a(string $arg)
+    {
+    }
+
+    public function b(float $arg)
+    {
     }
 }

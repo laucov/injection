@@ -82,10 +82,12 @@ class Validator
     /**
      * Validate a callable.
      */
-    public function validate(callable $callable): bool
+    public function validate(array|callable $callable): bool
     {
         // Get reflection.
-        $reflection = new \ReflectionFunction($callable);
+        $reflection = is_array($callable)
+            ? new \ReflectionMethod(...$callable)
+            : new \ReflectionFunction($callable);
 
         // Validate each parameter.
         foreach ($reflection->getParameters() as $parameter) {
