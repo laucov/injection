@@ -45,12 +45,36 @@ class Resolver
     }
 
     /**
-     * Call a function or method automatically resolving its dependencies.
+     * Call a function or method resolving its dependencies.
      */
     public function call(callable $callable): mixed
     {
-        // Get parameters.
         $reflection = new \ReflectionFunction($callable);
+        $arguments = $this->getArguments($reflection);
+        return $callable(...$arguments);
+    }
+
+    /**
+     * Create a new instance resolving its class constructor dependencies.
+     * 
+     * @template T
+     * @param class-string<T> $class_name
+     * @return T
+     */
+    public function instantiate(string $class_name): mixed
+    {
+        $reflection = new \ReflectionMethod($class_name, '__construct');
+        $arguments = $this->getArguments($reflection);
+        return new $class_name(...$arguments);
+    }
+
+    /**
+     * Resolve arguments for the given callable.
+     */
+    protected function getArguments(
+        \ReflectionFunctionAbstract $reflection,
+    ): array {
+        // Get parameters.
         $parameters = $reflection->getParameters();
 
         // Parse parameters.
@@ -59,7 +83,7 @@ class Resolver
             $this->pushArgument($arguments, $param);
         }
 
-        return $callable(...$arguments);
+        return $arguments;
     }
 
     /**
@@ -84,7 +108,7 @@ class Resolver
             return;
         }
 
-        // @todo Throw exception due to unsupported union/intersection types.
+        // Fail if there are intersection or union type parameters.
         $message = 'Cannot resolve union or intersection type parameter %s.';
         throw new \RuntimeException(sprintf($message, (string) $type));
     }

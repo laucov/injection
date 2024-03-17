@@ -42,8 +42,32 @@ class ResolverTest extends TestCase
     protected Resolver $resolver;
 
     /**
+     * @covers ::instantiate
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\IterableDependency::get
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::setIterable
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::getArguments
+     * @uses Laucov\Injection\Resolver::pushArgument
+     * @uses Laucov\Injection\Resolver::pushNamedTypeArgument
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     */
+    public function testCanResolveConstructors(): void
+    {
+        $instance = $this->resolver->instantiate(MyClass::class);
+        $this->assertInstanceOf(MyClass::class, $instance);
+        $this->assertSame('John', $instance->a);
+        $this->assertInstanceOf(B::class, $instance->b);
+    }
+
+    /**
      * @covers ::__construct
      * @covers ::call
+     * @covers ::getArguments
      * @covers ::pushArgument
      * @covers ::pushNamedTypeArgument
      * @covers ::pushUntypedArgument
@@ -60,9 +84,9 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::get
      * @dataProvider validCallableProvider
      */
-    public function testCanResolveDependencies(callable $fn, mixed $out): void
+    public function testCanResolveFunctions(callable $fn, mixed $output): void
     {
-        $this->assertSame($out, $this->resolver->call($fn));
+        $this->assertSame($output, $this->resolver->call($fn));
     }
 
     /**
@@ -72,6 +96,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Repository::setValue
      * @uses Laucov\Injection\Resolver::__construct
      * @uses Laucov\Injection\Resolver::call
+     * @uses Laucov\Injection\Resolver::getArguments
      * @uses Laucov\Injection\ValueDependency::__construct
      */
     public function testCannotResolveUnionOrIntersectionTypes(): void
@@ -89,6 +114,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Repository::setValue
      * @uses Laucov\Injection\Resolver::__construct
      * @uses Laucov\Injection\Resolver::call
+     * @uses Laucov\Injection\Resolver::getArguments
      * @uses Laucov\Injection\Resolver::pushArgument
      * @uses Laucov\Injection\ValueDependency::__construct
      */
@@ -173,4 +199,13 @@ class A
 
 class B
 {
+}
+
+class MyClass
+{
+    public function __construct(
+        public string $a,
+        public B $b,
+    ) {
+    }
 }
