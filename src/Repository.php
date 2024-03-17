@@ -74,6 +74,14 @@ class Repository
     }
 
     /**
+     * Remove a dependency.
+     */
+    public function removeDependency(string $name): void
+    {
+        unset($this->dependencies[$name]);
+    }
+
+    /**
      * Set a factory function to get dependencies from.
      */
     public function setFactory(string $name, callable $factory): static

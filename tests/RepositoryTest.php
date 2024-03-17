@@ -44,6 +44,7 @@ class RepositoryTest extends TestCase
      * @covers ::getValue
      * @covers ::hasDependency
      * @covers ::hasValue
+     * @covers ::removeDependency
      * @covers ::setFactory
      * @covers ::setIterable
      * @covers ::setValue
@@ -98,6 +99,11 @@ class RepositoryTest extends TestCase
         $this->assertTrue($this->repo->hasDependency('int'));
         $this->assertTrue($this->repo->hasDependency('float'));
         $this->assertFalse($this->repo->hasDependency('array'));
+
+        // Remove dependency.
+        $this->assertTrue($this->repo->hasDependency('float'));
+        $this->repo->removeDependency('float');
+        $this->assertFalse($this->repo->hasDependency('float'));
     }
 
     protected function setUp(): void
