@@ -1,6 +1,6 @@
 {
-    "name": "laucov/http",
-    "description": "Library for HTTP communication lifecycle control.",
+    "name": "laucov/injection",
+    "description": "Library for easy dependency injection on callables.",
     "type": "library",
     "license": "Apache-2.0",
     "autoload": {
