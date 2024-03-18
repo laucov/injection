@@ -61,17 +61,18 @@ class Resolver
      */
     public function instantiate(string $class_name): mixed
     {
-        $reflection = new \ReflectionMethod($class_name, '__construct');
-        $arguments = $this->getArguments($reflection);
+        $arguments = $this->resolve([$class_name, '__construct']);
         return new $class_name(...$arguments);
     }
 
     /**
-     * Resolve the given callable's parameters.
+     * Resolve the given callable or class method parameters.
      */
-    public function resolve(callable $callable): array
+    public function resolve(array|callable $callable): array
     {
-        $reflection = new \ReflectionFunction($callable);
+        $reflection = is_callable($callable)
+            ? new \ReflectionFunction($callable)
+            : new \ReflectionMethod(...$callable);
         return $this->getArguments($reflection);
     }
 

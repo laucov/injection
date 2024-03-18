@@ -91,6 +91,11 @@ class ResolverTest extends TestCase
                 fn ($untyped) => '',
                 [null],
             ],
+            // Test class methods.
+            [
+                [MyClass::class, 'test'],
+                ['John', 42],
+            ],
         ];
     }
 
@@ -106,6 +111,7 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\Resolver::getArguments
      * @uses Laucov\Injection\Resolver::pushArgument
      * @uses Laucov\Injection\Resolver::pushNamedTypeArgument
+     * @uses Laucov\Injection\Resolver::resolve
      * @uses Laucov\Injection\ValueDependency::__construct
      * @uses Laucov\Injection\ValueDependency::get
      */
@@ -162,12 +168,12 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::get
      * @dataProvider callableProvider
      */
-    public function testCanGetArguments(callable $fn, array $expected): void
+    public function testCanGetArguments(array|callable $c, array $exp): void
     {
-        $actual = $this->resolver->resolve($fn);
+        $actual = $this->resolver->resolve($c);
         $this->assertIsArray($actual);
-        $this->assertSameSize($expected, $actual);
-        foreach ($expected as $i => $v) {
+        $this->assertSameSize($exp, $actual);
+        foreach ($exp as $i => $v) {
             $this->assertArrayHasKey($i, $actual);
             $this->assertSame($v, $actual[$i]);
         }
@@ -240,5 +246,9 @@ class MyClass
         public string $a,
         public B $b,
     ) {
+    }
+
+    public function test(string $a, int $b): void
+    {
     }
 }
