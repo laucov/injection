@@ -61,7 +61,14 @@ class Resolver
      */
     public function instantiate(string $class_name): mixed
     {
+        // Check if has a constructor method.
+        if (!method_exists($class_name, '__construct')) {
+            return new $class_name();
+        }
+
+        // Resolve arguments.
         $arguments = $this->resolve([$class_name, '__construct']);
+
         return new $class_name(...$arguments);
     }
 

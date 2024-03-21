@@ -117,10 +117,17 @@ class ResolverTest extends TestCase
      */
     public function testCanCallConstructors(): void
     {
+        // Resolve constructor dependencies.
         $instance = $this->resolver->instantiate(MyClass::class);
         $this->assertInstanceOf(MyClass::class, $instance);
         $this->assertSame('John', $instance->a);
         $this->assertInstanceOf(B::class, $instance->b);
+
+        // Test class with no constructor.
+        $this->assertInstanceOf(
+            A::class,
+            $this->resolver->instantiate(A::class),
+        );
     }
 
     /**
