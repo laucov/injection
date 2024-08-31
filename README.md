@@ -33,9 +33,9 @@ $repository->setIterable('string', ['John', 'Mark', 'Alfred']);
 $repository->setFactory('int', fn () => time());
 
 // Create callable.
-$callback = function (int $time, string ...$names) {
-    $message = 'Called at %s with names %s.';
-    echo sprintf($message, $time, implode(', ', $names));
+$callback = function (int $time, float $pi, string ...$names) {
+    $message = 'Called at %s with names %s. Pi is %s.';
+    echo sprintf($message, $time, implode(', ', $names), $pi);
 };
 
 // Validate.
@@ -43,5 +43,5 @@ $validator->validate($callback); # Returns true
 
 // Call - supposing time is 1725111445
 $resolver->call($callback);
-// Output: Called at 1725111445 with names John, Mark, Alfred.
+// Output: Called at 1725111445 with names John, Mark, Alfred. Pi is 3.14.
 ```
