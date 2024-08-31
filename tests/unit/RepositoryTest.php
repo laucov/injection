@@ -28,10 +28,11 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Unit;
 
 use Laucov\Injection\Repository;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 /**
  * @coversDefaultClass \Laucov\Injection\Repository
@@ -88,7 +89,9 @@ class RepositoryTest extends TestCase
 
         // Set factory function.
         // Also test if can replace a type in the repository (replacing `int`).
-        $factory = fn () => ValueHolderA::$value++;
+        $object = new stdClass;
+        $object->value = 0;
+        $factory = fn () => $object->value++;
         $this->repo->setFactory('int', $factory);
         $this->assertSame(0, $this->repo->getValue('int'));
         $this->assertSame(1, $this->repo->getValue('int'));
@@ -106,13 +109,11 @@ class RepositoryTest extends TestCase
         $this->assertFalse($this->repo->hasDependency('float'));
     }
 
+    /**
+     * This method is called before each test.
+     */
     protected function setUp(): void
     {
         $this->repo = new Repository();
     }
-}
-
-class ValueHolderA
-{
-    public static int $value = 0;
 }
