@@ -28,11 +28,12 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Unit;
 
 use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\FactoryDependency;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 /**
  * @coversDefaultClass \Laucov\Injection\FactoryDependency
@@ -45,16 +46,13 @@ class FactoryDependencyTest extends TestCase
      */
     public function testCanSetAndGet(): void
     {
-        $callable = fn () => ValueHolderB::$value * 2;
+        $object = new stdClass;
+        $object->value = 2;
+        $callable = fn () => $object->value * 2;
         $dependency = new FactoryDependency($callable);
         $this->assertInstanceOf(DependencyInterface::class, $dependency);
         $this->assertSame(4, $dependency->get());
-        ValueHolderB::$value = 5;
+        $object->value = 5;
         $this->assertSame(10, $dependency->get());
     }
-}
-
-class ValueHolderB
-{
-    public static int $value = 2;
 }
