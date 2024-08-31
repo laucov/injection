@@ -28,7 +28,7 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Unit;
 
 use Laucov\Injection\Repository;
 use Laucov\Injection\Resolver;
@@ -39,61 +39,75 @@ use PHPUnit\Framework\TestCase;
  */
 class ResolverTest extends TestCase
 {
+    /**
+     * This method is called before the first test of this test class is run.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        $a = new class {};
+        class_alias($a::class, __NAMESPACE__ . '\\' . 'A');
+        $b = new class {};
+        class_alias($b::class, __NAMESPACE__ . '\\' . 'B');
+    }
+
+    /**
+     * Resolver instance.
+     */
     protected Resolver $resolver;
 
+    /**
+     * Provides resolvable callables and expected arguments.
+     */
     public function callableProvider(): array
     {
+        $object = new class {
+            public function doSomething(string $a, int $b): void
+            {
+            }
+        };
         return [
-            // Test simple dynamic dependencies.
-            [
+            'dynamic dependency' => [
                 fn (string $a, string $b) => '',
                 ['John', 'Mark'],
             ],
-            // Test dynamic dependency with variadic parameter.
-            [
+            'dynamic variadic dependency' => [
                 fn (string ...$names) => '',
                 ['John', 'Mark', 'James'],
             ],
-            // Test static dependency with variadic parameter.
-            [
+            'static variadic dependency' => [
                 fn (int $num, int ...$nums) => '',
                 [42, 42],
             ],
-            // Test invalid dependency with nullable parameter.
-            [
+            'invalid but nullable depedency #1' => [
                 fn (?\PDO $pdo) => '',
                 [null],
             ],
-            [
+            'invalid but nullable depedency #2' => [
                 fn (null|\PDO $pdo) => '',
                 [null],
             ],
-            // Test valid dependency with nullable parameter.
-            [
+            'valid nullable dependency #1' => [
                 fn (?string $string) => '',
                 ['John'],
             ],
-            [
+            'valid nullable dependency #2' => [
                 fn (null|string $string) => '',
                 ['John'],
             ],
-            // Test invalid dependency with default value.
-            [
+            'invalid dependency with default value' => [
                 fn (?float $a = 2.45, ?string $b = 'Bob') => '',
                 [2.45, 'John'],
             ],
-            // Test untyped parameter.
-            [
+            'untyped dependency with default value' => [
                 fn ($untyped = 'DEFAULT') => '',
                 ['DEFAULT'],
             ],
-            [
+            'untyped dependency w/o default value' => [
                 fn ($untyped) => '',
                 [null],
             ],
-            // Test class methods.
-            [
-                [MyClass::class, 'test'],
+            'uninstantiated class method' => [
+                [$object::class, 'doSomething'],
                 ['John', 42],
             ],
         ];
@@ -117,16 +131,26 @@ class ResolverTest extends TestCase
      */
     public function testCanCallConstructors(): void
     {
+        // Create class.
+        $object = new class ('', new B) {
+            public function __construct(
+                public string $a,
+                public B $b,
+            ) {
+            }
+        };
+
         // Resolve constructor dependencies.
-        $instance = $this->resolver->instantiate(MyClass::class);
-        $this->assertInstanceOf(MyClass::class, $instance);
+        $instance = $this->resolver->instantiate($object::class);
+        $this->assertInstanceOf($object::class, $instance);
         $this->assertSame('John', $instance->a);
         $this->assertInstanceOf(B::class, $instance->b);
 
         // Test class with no constructor.
+        $object = new class {};
         $this->assertInstanceOf(
-            A::class,
-            $this->resolver->instantiate(A::class),
+            $object::class,
+            $this->resolver->instantiate($object::class),
         );
     }
 
@@ -175,14 +199,14 @@ class ResolverTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::get
      * @dataProvider callableProvider
      */
-    public function testCanGetArguments(array|callable $c, array $exp): void
+    public function testCanGetArguments(mixed $callable, array $expected): void
     {
-        $actual = $this->resolver->resolve($c);
+        $actual = $this->resolver->resolve($callable);
         $this->assertIsArray($actual);
-        $this->assertSameSize($exp, $actual);
-        foreach ($exp as $i => $v) {
+        $this->assertSameSize($expected, $actual);
+        foreach ($expected as $i => $expected_argument) {
             $this->assertArrayHasKey($i, $actual);
-            $this->assertSame($v, $actual[$i]);
+            $this->assertSame($expected_argument, $actual[$i]);
         }
     }
 
@@ -224,38 +248,19 @@ class ResolverTest extends TestCase
         $this->resolver->call($callable);
     }
 
+    /**
+     * This method is called before each test.
+     */
     protected function setUp(): void
     {
-        $repo = new Repository();
-        $repo->setValue(A::class, new A());
-        $repo->setValue(B::class, new B());
-        $repo->setValue('int', 42);
-        $repo->setValue('array', ['bar', 'foo']);
-        $repo->setValue('bool', true);
-        $repo->setValue('iterable', ['foo', 'bar']);
-        $repo->setIterable('string', ['John', 'Mark', 'James']);
-
-        $this->resolver = new Resolver($repo);
-    }
-}
-
-class A
-{
-}
-
-class B
-{
-}
-
-class MyClass
-{
-    public function __construct(
-        public string $a,
-        public B $b,
-    ) {
-    }
-
-    public function test(string $a, int $b): void
-    {
+        $repository = new Repository();
+        $repository->setValue(A::class, new A());
+        $repository->setValue(B::class, new B());
+        $repository->setValue('int', 42);
+        $repository->setValue('array', ['bar', 'foo']);
+        $repository->setValue('bool', true);
+        $repository->setValue('iterable', ['foo', 'bar']);
+        $repository->setIterable('string', ['John', 'Mark', 'James']);
+        $this->resolver = new Resolver($repository);
     }
 }
