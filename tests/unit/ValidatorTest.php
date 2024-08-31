@@ -28,7 +28,7 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Unit;
 
 use Laucov\Injection\Repository;
 use Laucov\Injection\Validator;
@@ -41,8 +41,19 @@ class ValidatorTest extends TestCase
 {
     protected Validator $validator;
 
+    /**
+     * Provides callables and corresponding validation expectations.
+     */
     public function callableValidationProvider(): array
     {
+        $object = new class {
+            public function a(string $arg)
+            {
+            }
+            public function b(float $arg)
+            {
+            }
+        };
         return [
             [fn (string $a, string $b, string ...$c) => '', true],
             [fn (int $a, float $b) => '', false],
@@ -54,8 +65,8 @@ class ValidatorTest extends TestCase
             [fn (array $a) => '', true],
             [fn (object $a) => '', false],
             [fn (int|string $a) => '', false],
-            [[C::class, 'a'], true],
-            [[C::class, 'b'], false],
+            [[$object::class, 'a'], true],
+            [[$object::class, 'b'], false],
         ];
     }
 
@@ -73,42 +84,29 @@ class ValidatorTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::__construct
      * @dataProvider callableValidationProvider
      */
-    public function testValidatesCallables(callable|array $c, bool $exp): void
+    public function testValidatesCallables(mixed $callable, bool $valid): void
     {
-        $actual = $this->validator->validate($c);
-        if ($exp) {
+        $actual = $this->validator->validate($callable);
+        if ($valid) {
             $this->assertTrue($actual);
         } else {
             $this->assertFalse($actual);
         }
     }
 
+    /**
+     * This method is called before each test.
+     */
     protected function setUp(): void
     {
-        // Create repository.
         $repo = new Repository();
         $repo->setIterable('string', ['a', 'b', 'c', 'd']);
         $repo->setValue('int', 123);
         $repo->setValue('float', 1.234);
-
-        // Create validator.
         $this->validator = new Validator($repo);
-
-        // Add allowed types without creating dependencies.
         $this->validator->allow('array');
         $this->validator->allow('object');
         $this->validator->disallow('object');
         $this->validator->forbid('float');
-    }
-}
-
-class C
-{
-    public function a(string $arg)
-    {
-    }
-
-    public function b(float $arg)
-    {
     }
 }
