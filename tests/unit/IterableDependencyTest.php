@@ -28,27 +28,37 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Unit;
 
-use Laucov\Injection\Interfaces\DependencyInterface;
-use Laucov\Injection\ValueDependency;
+use Laucov\Injection\Interfaces\DynamicDependencyInterface;
+use Laucov\Injection\IterableDependency;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @coversDefaultClass \Laucov\Injection\ValueDependency
+ * @coversDefaultClass \Laucov\Injection\IterableDependency
  */
-class ValueDependencyTest extends TestCase
+class IterableDependencyTest extends TestCase
 {
     /**
      * @covers ::__construct
      * @covers ::get
+     * @covers ::has
      */
     public function testCanSetAndGet(): void
     {
-        $dependency = new ValueDependency('John Doe');
-        $this->assertInstanceOf(DependencyInterface::class, $dependency);
-        for ($i = 0; $i < 5; $i++) {
-            $this->assertSame('John Doe', $dependency->get());
-        }
+        $dependency = new IterableDependency(['foo', 'bar', 'baz']);
+        $this->assertInstanceOf(
+            DynamicDependencyInterface::class,
+            $dependency,
+        );
+        $this->assertTrue($dependency->has());
+        $this->assertSame('foo', $dependency->get());
+        $this->assertTrue($dependency->has());
+        $this->assertSame('bar', $dependency->get());
+        $this->assertTrue($dependency->has());
+        $this->assertSame('baz', $dependency->get());
+        $this->assertFalse($dependency->has());
+        $this->assertSame('foo', $dependency->get());
+        $this->assertTrue($dependency->has());
     }
 }
