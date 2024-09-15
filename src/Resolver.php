@@ -47,7 +47,7 @@ class Resolver
     /**
      * Call a function or method resolving its dependencies.
      */
-    public function call(callable $callable): mixed
+    public function call(array|callable $callable): mixed
     {
         return $callable(...$this->resolve($callable));
     }
@@ -77,9 +77,9 @@ class Resolver
      */
     public function resolve(array|callable $callable): array
     {
-        $reflection = is_callable($callable)
-            ? new \ReflectionFunction($callable)
-            : new \ReflectionMethod(...$callable);
+        $reflection = is_array($callable)
+            ? new \ReflectionMethod(...$callable)
+            : new \ReflectionFunction($callable);
         return $this->getArguments($reflection);
     }
 

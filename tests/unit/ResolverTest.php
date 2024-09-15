@@ -177,6 +177,19 @@ class ResolverTest extends TestCase
         $callable = fn (int $n, string ...$s) => "{$n}: " . implode(', ', $s);
         $output = '42: John, Mark, James';
         $this->assertSame($output, $this->resolver->call($callable));
+        $object = new class {
+            public static function join(array $array): string
+            {
+                return implode(',', $array);
+            }
+            public function sum(int $a, int $b): int
+            {
+                return $a + $b;
+            }
+        };
+        $this->assertSame(84, $this->resolver->call([$object, 'sum']));
+        $actual = $this->resolver->call([$object::class, 'join']);
+        $this->assertSame('bar,foo', $actual);
     }
 
     /**
