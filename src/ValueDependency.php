@@ -55,4 +55,12 @@ class ValueDependency implements DependencyInterface
     {
         return $this->value;
     }
+
+    /**
+     * Check whether a value is currently available.
+     */
+    public function has(): bool
+    {
+        return true;
+    }
 }

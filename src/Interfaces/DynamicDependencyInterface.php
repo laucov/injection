@@ -29,12 +29,10 @@
 namespace Laucov\Injection\Interfaces;
 
 /**
- * Provides dynamic values for a specific dependency source.
+ * Provides dynamic values from a specific named source.
+ * 
+ * @deprecated 2.0.0 Use `DependencyInterface` instead.
  */
 interface DynamicDependencyInterface extends DependencyInterface
 {
-    /**
-     * Check if there are new values to come.
-     */
-    public function has(): bool;
 }

@@ -29,7 +29,6 @@
 namespace Laucov\Injection;
 
 use Laucov\Injection\Interfaces\DependencyInterface;
-use Laucov\Injection\Interfaces\DynamicDependencyInterface;
 
 /**
  * Stores dependency sources.
@@ -64,13 +63,7 @@ class Repository
      */
     public function hasValue(string $name): bool
     {
-        $dependency = $this->dependencies[$name];
-
-        if ($dependency instanceof DynamicDependencyInterface) {
-            return $dependency->has();
-        }
-
-        return false;
+        return $this->dependencies[$name]->has();
     }
 
     /**

@@ -28,12 +28,12 @@
 
 namespace Laucov\Injection;
 
-use Laucov\Injection\Interfaces\DynamicDependencyInterface;
+use Laucov\Injection\Interfaces\DependencyInterface;
 
 /**
  * Stores a factory function or method as a dependency.
  */
-class FactoryDependency implements DynamicDependencyInterface
+class FactoryDependency implements DependencyInterface
 {
     /**
      * Function/method to get values.

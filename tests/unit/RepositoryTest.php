@@ -56,6 +56,7 @@ class RepositoryTest extends TestCase
      * @uses Laucov\Injection\IterableDependency::has
      * @uses Laucov\Injection\ValueDependency::__construct
      * @uses Laucov\Injection\ValueDependency::get
+     * @uses Laucov\Injection\ValueDependency::has
      */
     public function testCanSetDependencies(): void
     {
@@ -63,12 +64,12 @@ class RepositoryTest extends TestCase
         $this->repo
             ->setValue('string', 'John')
             ->setValue('int', 42);
-        $this->assertFalse($this->repo->hasValue('string'));
-        $this->assertFalse($this->repo->hasValue('int'));
+        $this->assertTrue($this->repo->hasValue('string'));
+        $this->assertTrue($this->repo->hasValue('int'));
         $this->assertSame('John', $this->repo->getValue('string'));
         $this->assertSame(42, $this->repo->getValue('int'));
-        $this->assertFalse($this->repo->hasValue('string'));
-        $this->assertFalse($this->repo->hasValue('int'));
+        $this->assertTrue($this->repo->hasValue('string'));
+        $this->assertTrue($this->repo->hasValue('int'));
 
         // Set iterable values.
         $this->repo->setIterable('float', [0.00, 0.25, 0.50, 0.75, 1.00]);

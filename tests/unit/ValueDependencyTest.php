@@ -30,7 +30,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\ValueDependency;
 use PHPUnit\Framework\TestCase;
 
@@ -42,12 +41,17 @@ class ValueDependencyTest extends TestCase
     /**
      * @covers ::__construct
      * @covers ::get
+     * @covers ::has
      */
     public function testGetsValues(): void
     {
         $dependency = new ValueDependency('John Doe');
+        $this->assertTrue($dependency->has());
         $this->assertSame('John Doe', $dependency->get());
+        $this->assertTrue($dependency->has());
         $this->assertSame('John Doe', $dependency->get());
+        $this->assertTrue($dependency->has());
         $this->assertSame('John Doe', $dependency->get());
+        $this->assertTrue($dependency->has());
     }
 }

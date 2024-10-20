@@ -28,13 +28,13 @@
 
 namespace Laucov\Injection;
 
-use Laucov\Injection\Interfaces\DynamicDependencyInterface;
+use Laucov\Injection\Interfaces\DependencyInterface;
 use RuntimeException;
 
 /**
  * Stores an iterable as a dependency.
  */
-class IterableDependency implements DynamicDependencyInterface
+class IterableDependency implements DependencyInterface
 {
     /**
      * Registered iterable.

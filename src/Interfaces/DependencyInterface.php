@@ -29,7 +29,7 @@
 namespace Laucov\Injection\Interfaces;
 
 /**
- * Provides values for a specific dependency source.
+ * Provides values from a specific named source.
  */
 interface DependencyInterface
 {
@@ -37,4 +37,9 @@ interface DependencyInterface
      * Get the next value.
      */
     public function get(): mixed;
+
+    /**
+     * Check whether a value is currently available.
+     */
+    public function has(): bool;
 }
