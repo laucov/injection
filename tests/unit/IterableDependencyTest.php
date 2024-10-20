@@ -33,6 +33,7 @@ namespace Tests\Unit;
 use Laucov\Injection\Interfaces\DynamicDependencyInterface;
 use Laucov\Injection\IterableDependency;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @coversDefaultClass \Laucov\Injection\IterableDependency
@@ -44,13 +45,9 @@ class IterableDependencyTest extends TestCase
      * @covers ::get
      * @covers ::has
      */
-    public function testCanSetAndGet(): void
+    public function testChecksAndGetsValues(): void
     {
         $dependency = new IterableDependency(['foo', 'bar', 'baz']);
-        $this->assertInstanceOf(
-            DynamicDependencyInterface::class,
-            $dependency,
-        );
         $this->assertTrue($dependency->has());
         $this->assertSame('foo', $dependency->get());
         $this->assertTrue($dependency->has());
@@ -58,7 +55,7 @@ class IterableDependencyTest extends TestCase
         $this->assertTrue($dependency->has());
         $this->assertSame('baz', $dependency->get());
         $this->assertFalse($dependency->has());
-        $this->assertSame('foo', $dependency->get());
-        $this->assertTrue($dependency->has());
+        $this->expectException(RuntimeException::class);
+        $dependency->get();
     }
 }

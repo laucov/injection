@@ -82,10 +82,6 @@ class RepositoryTest extends TestCase
         $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(1.00, $this->repo->getValue('float'));
         $this->assertFalse($this->repo->hasValue('float'));
-        $this->assertSame(0.00, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
-        $this->assertSame(0.25, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
 
         // Set factory function.
         // Also test if can replace a type in the repository (replacing `int`).
