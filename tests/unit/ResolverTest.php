@@ -77,7 +77,7 @@ class ResolverTest extends TestCase
             'global function' => ['strrev', 'raboof'],
             'instance method' => [[$object, 'removeVowels'], 'fbr'],
             'static method' => [[$object::class, 'divideByThree'], 333],
-            // 'invokable instance' => [$object, 'foobarfoobar'],
+            'invokable instance' => [$object, 'foobarfoobar'],
         ];
     }
 

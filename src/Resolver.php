@@ -28,6 +28,7 @@
 
 namespace Laucov\Injection;
 
+use Closure;
 use ReflectionFunction;
 use ReflectionIntersectionType;
 use ReflectionMethod;
@@ -79,11 +80,14 @@ class Resolver
     /**
      * Get resolved arguments for the given function or method.
      */
-    public function resolve(array|callable $callable): array
+    public function resolve(array|callable $subject): array
     {
-        $reflection = is_array($callable)
-            ? new ReflectionMethod(...$callable)
-            : new ReflectionFunction($callable);
+        $reflection = match (true) {
+            is_string($subject) => new ReflectionFunction($subject),
+            $subject instanceof Closure => new ReflectionFunction($subject),
+            is_array($subject) => new ReflectionMethod(...$subject),
+            is_object($subject) => new ReflectionMethod($subject, '__invoke'),
+        };
         return array_merge(...array_map(
             [$this, 'resolveParameter'],
             $reflection->getParameters(),
