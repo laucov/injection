@@ -30,9 +30,13 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Exception;
 use Laucov\Injection\Repository;
 use Laucov\Injection\Resolver;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use stdClass;
 
 /**
  * @coversDefaultClass \Laucov\Injection\Resolver
@@ -40,225 +44,173 @@ use PHPUnit\Framework\TestCase;
 class ResolverTest extends TestCase
 {
     /**
-     * This method is called before the first test of this test class is run.
-     */
-    public static function setUpBeforeClass(): void
-    {
-        $a = new class {};
-        class_alias($a::class, __NAMESPACE__ . '\\' . 'A');
-        $b = new class {};
-        class_alias($b::class, __NAMESPACE__ . '\\' . 'B');
-    }
-
-    /**
-     * Resolver instance.
+     * Resolver.
      */
     protected Resolver $resolver;
 
     /**
-     * Provides resolvable callables and expected arguments.
+     * Repository mock.
      */
-    public function callableProvider(): array
+    protected Repository&MockObject $repository;
+
+    /**
+     * Provides callables and expected outputs.
+     */
+    public static function provideCallables(): array
     {
         $object = new class {
-            public function doSomething(string $a, int $b): void
+            public static function divideByThree(int $number): int
             {
+                return $number / 3;
+            }
+            public function __invoke(string $subject): string
+            {
+                return str_repeat($subject, 2);
+            }
+            public function removeVowels(string $subject): string
+            {
+                return str_replace(['a', 'e', 'i', 'o', 'u'], '', $subject);
             }
         };
         return [
-            'dynamic dependency' => [
-                fn (string $a, string $b) => '',
-                ['John', 'Mark'],
+            'closure' => [fn (int $a, int $b) => $a + $b, 1998],
+            'global function' => ['strrev', 'raboof'],
+            'instance method' => [[$object, 'removeVowels'], 'fbr'],
+            'static method' => [[$object::class, 'divideByThree'], 333],
+            // 'invokable instance' => [$object, 'foobarfoobar'],
+        ];
+    }
+
+    /**
+     * Provides class names.
+     */
+    public static function provideClassNames(): array
+    {
+        return [
+            'anonymous w/o constructor' => [
+                (new class {})::class,
             ],
-            'dynamic variadic dependency' => [
-                fn (string ...$names) => '',
-                ['John', 'Mark', 'James'],
-            ],
-            'static variadic dependency' => [
-                fn (int $num, int ...$nums) => '',
-                [42, 42],
-            ],
-            'invalid but nullable depedency #1' => [
-                fn (?\PDO $pdo) => '',
-                [null],
-            ],
-            'invalid but nullable depedency #2' => [
-                fn (null|\PDO $pdo) => '',
-                [null],
-            ],
-            'valid nullable dependency #1' => [
-                fn (?string $string) => '',
-                ['John'],
-            ],
-            'valid nullable dependency #2' => [
-                fn (null|string $string) => '',
-                ['John'],
-            ],
-            'invalid dependency with default value' => [
-                fn (?float $a = 2.45, ?string $b = 'Bob') => '',
-                [2.45, 'John'],
-            ],
-            'untyped dependency with default value' => [
-                fn ($untyped = 'DEFAULT') => '',
-                ['DEFAULT'],
-            ],
-            'untyped dependency w/o default value' => [
-                fn ($untyped) => '',
-                [null],
-            ],
-            'uninstantiated class method' => [
-                [$object::class, 'doSomething'],
-                ['John', 42],
+            'anonymous with constructor' => [
+                (new class ('', 0) {
+                    public function __construct(string $a, int $b)
+                    {
+                    }
+                })::class,
             ],
         ];
     }
 
     /**
-     * @covers ::instantiate
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\IterableDependency::get
-     * @uses Laucov\Injection\Repository::getValue
-     * @uses Laucov\Injection\Repository::hasDependency
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\Resolver::getArguments
-     * @uses Laucov\Injection\Resolver::pushArgument
-     * @uses Laucov\Injection\Resolver::pushNamedTypeArgument
-     * @uses Laucov\Injection\Resolver::resolve
-     * @uses Laucov\Injection\ValueDependency::__construct
-     * @uses Laucov\Injection\ValueDependency::get
+     * Provides functions and expected arguments.
      */
-    public function testCanCallConstructors(): void
+    public static function provideResolvableFunctions(): array
     {
-        // Create class.
-        $object = new class ('', new B) {
-            public function __construct(
-                public string $a,
-                public B $b,
-            ) {
-            }
-        };
-
-        // Resolve constructor dependencies.
-        $instance = $this->resolver->instantiate($object::class);
-        $this->assertInstanceOf($object::class, $instance);
-        $this->assertSame('John', $instance->a);
-        $this->assertInstanceOf(B::class, $instance->b);
-
-        // Test class with no constructor.
-        $object = new class {};
-        $this->assertInstanceOf(
-            $object::class,
-            $this->resolver->instantiate($object::class),
-        );
+        return [
+            'common' => [
+                function (string $a, int $b, object $c) {},
+                ['foobar', 999, (object) ['id' => 1, 'name' => 'John']],
+            ],
+            'nullable' => [
+                function (?float $a, null|array $b) {},
+                [null, null],
+            ],
+            'default value' => [
+                function (null|float $a = 3.14, ?array $b = ['AZ', 42]) {},
+                [3.14, ['AZ', 42]],
+            ],
+            'variadic' => [
+                function (bool $a, string ...$b) {},
+                [true, 'foobar', 'foobar', 'foobar'],
+            ],
+            'untyped' => [
+                function ($a, $b = 1.25, ...$c) {},
+                [null, 1.25],
+            ],
+        ];
     }
 
     /**
      * @covers ::call
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\IterableDependency::get
-     * @uses Laucov\Injection\IterableDependency::has
-     * @uses Laucov\Injection\Repository::getValue
-     * @uses Laucov\Injection\Repository::hasDependency
-     * @uses Laucov\Injection\Repository::hasValue
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
+     * @covers ::resolve
      * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\Resolver::getArguments
-     * @uses Laucov\Injection\Resolver::pushArgument
-     * @uses Laucov\Injection\Resolver::pushNamedTypeArgument
-     * @uses Laucov\Injection\Resolver::resolve
-     * @uses Laucov\Injection\ValueDependency::__construct
-     * @uses Laucov\Injection\ValueDependency::get
+     * @uses Laucov\Injection\Resolver::resolveNamedType
+     * @uses Laucov\Injection\Resolver::resolveParameter
+     * @dataProvider provideCallables
      */
-    public function testCanCallFunctions(): void
+    public function testCallsCallables($callable, $expected): void
     {
-        $callable = fn (int $n, string ...$s) => "{$n}: " . implode(', ', $s);
-        $output = '42: John, Mark, James';
-        $this->assertSame($output, $this->resolver->call($callable));
-        $object = new class {
-            public static function join(array $array): string
-            {
-                return implode(',', $array);
-            }
-            public function sum(int $a, int $b): int
-            {
-                return $a + $b;
-            }
-        };
-        $this->assertSame(84, $this->resolver->call([$object, 'sum']));
-        $actual = $this->resolver->call([$object::class, 'join']);
-        $this->assertSame('bar,foo', $actual);
+        $this->assertEquals($expected, $this->resolver->call($callable));
+    }
+
+    /**
+     * @covers ::instantiate
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::resolve
+     * @uses Laucov\Injection\Resolver::resolveNamedType
+     * @uses Laucov\Injection\Resolver::resolveParameter
+     * @dataProvider provideClassNames
+     */
+    public function testInstantiateClasses($class_name): void
+    {
+        $this->assertInstanceOf(
+            $class_name,
+            $this->resolver->instantiate($class_name),
+        );
+    }
+
+    /**
+     * @covers ::resolveNamedType
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::resolve
+     * @uses Laucov\Injection\Resolver::resolveParameter
+     */
+    public function testPanicsIfCannotResolve(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $message = 'Could not resolve parameter of type float.';
+        $this->expectExceptionMessage($message);
+        $this->resolver->resolve(fn (float $a) => null);
+    }
+
+    /**
+     * @covers ::resolveParameter
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::resolve
+     */
+    public function testPanicsIfFindsIntersectionTypes(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $message = 'Cannot resolve intersection types.';
+        $this->expectExceptionMessage($message);
+        $this->resolver->resolve(fn (RuntimeException&Exception $a) => null);
+    }
+
+    /**
+     * @covers ::resolveParameter
+     * @uses Laucov\Injection\Resolver::__construct
+     * @uses Laucov\Injection\Resolver::resolve
+     */
+    public function testPanicsIfFindsUnionTypes(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $message = 'Cannot resolve union types.';
+        $this->expectExceptionMessage($message);
+        $this->resolver->resolve(fn (float|int $a) => null);
     }
 
     /**
      * @covers ::__construct
      * @covers ::resolve
-     * @covers ::getArguments
-     * @covers ::pushArgument
-     * @covers ::pushNamedTypeArgument
-     * @covers ::pushUntypedArgument
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\IterableDependency::get
-     * @uses Laucov\Injection\IterableDependency::has
-     * @uses Laucov\Injection\Repository::getValue
-     * @uses Laucov\Injection\Repository::hasDependency
-     * @uses Laucov\Injection\Repository::hasValue
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\ValueDependency::__construct
-     * @uses Laucov\Injection\ValueDependency::get
-     * @dataProvider callableProvider
+     * @covers ::resolveNamedType
+     * @covers ::resolveParameter
+     * @covers ::resolveUnknownType
+     * @dataProvider provideResolvableFunctions
      */
-    public function testCanGetArguments(mixed $callable, array $expected): void
+    public function testResolvesParameters($callable, array $expected): void
     {
         $actual = $this->resolver->resolve($callable);
-        $this->assertIsArray($actual);
-        $this->assertSameSize($expected, $actual);
-        foreach ($expected as $i => $expected_argument) {
-            $this->assertArrayHasKey($i, $actual);
-            $this->assertSame($expected_argument, $actual[$i]);
-        }
-    }
-
-    /**
-     * @covers ::pushArgument
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\Resolver::call
-     * @uses Laucov\Injection\Resolver::getArguments
-     * @uses Laucov\Injection\Resolver::resolve
-     * @uses Laucov\Injection\ValueDependency::__construct
-     */
-    public function testCannotResolveUnionOrIntersectionTypes(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $callable = fn (string|int $union_parameter) => $union_parameter;
-        $this->resolver->call($callable);
-    }
-
-    /**
-     * @covers ::pushNamedTypeArgument
-     * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\Repository::hasDependency
-     * @uses Laucov\Injection\Repository::setIterable
-     * @uses Laucov\Injection\Repository::setValue
-     * @uses Laucov\Injection\Resolver::__construct
-     * @uses Laucov\Injection\Resolver::call
-     * @uses Laucov\Injection\Resolver::getArguments
-     * @uses Laucov\Injection\Resolver::pushArgument
-     * @uses Laucov\Injection\Resolver::resolve
-     * @uses Laucov\Injection\ValueDependency::__construct
-     */
-    public function testRequiredParametersMustHaveAvailableTypes(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $callable = fn (float $required_float) => $required_float;
-        $this->resolver->call($callable);
+        $this->assertEquals($expected, $actual);
+        $callable(...$actual);
     }
 
     /**
@@ -266,14 +218,28 @@ class ResolverTest extends TestCase
      */
     protected function setUp(): void
     {
-        $repository = new Repository();
-        $repository->setValue(A::class, new A());
-        $repository->setValue(B::class, new B());
-        $repository->setValue('int', 42);
-        $repository->setValue('array', ['bar', 'foo']);
-        $repository->setValue('bool', true);
-        $repository->setValue('iterable', ['foo', 'bar']);
-        $repository->setIterable('string', ['John', 'Mark', 'James']);
-        $this->resolver = new Resolver($repository);
+        $this->repository = $this->createMock(Repository::class);
+        $this->repository
+            ->method('hasDependency')
+            ->willReturnCallback(fn (string $name) => match ($name) {
+                'array' => false,
+                'bool' => true,
+                'float' => false,
+                'int' => true,
+                'object' => true,
+                'string' => true,
+            });
+        $this->repository
+            ->method('hasValue')
+            ->willReturnOnConsecutiveCalls(true, true, false);
+        $this->repository
+            ->method('getValue')
+            ->willReturnMap([
+                ['bool', true],
+                ['int', 999],
+                ['object', (object) ['id' => 1, 'name' => 'John']],
+                ['string', 'foobar'],
+            ]);
+        $this->resolver = new Resolver($this->repository);
     }
 }

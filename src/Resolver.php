@@ -28,6 +28,14 @@
 
 namespace Laucov\Injection;
 
+use ReflectionFunction;
+use ReflectionIntersectionType;
+use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionParameter;
+use ReflectionUnionType;
+use RuntimeException;
+
 /**
  * Resolves dependencies for instances and callables.
  */
@@ -47,7 +55,7 @@ class Resolver
     /**
      * Call a function or method resolving its dependencies.
      */
-    public function call(array|callable $callable): mixed
+    public function call(callable $callable): mixed
     {
         return $callable(...$this->resolve($callable));
     }
@@ -61,85 +69,33 @@ class Resolver
      */
     public function instantiate(string $class_name): mixed
     {
-        // Check if has a constructor method.
         if (!method_exists($class_name, '__construct')) {
             return new $class_name();
         }
-
-        // Resolve arguments.
         $arguments = $this->resolve([$class_name, '__construct']);
-
         return new $class_name(...$arguments);
     }
 
     /**
-     * Resolve the given callable or class method parameters.
+     * Get resolved arguments for the given function or method.
      */
     public function resolve(array|callable $callable): array
     {
         $reflection = is_array($callable)
-            ? new \ReflectionMethod(...$callable)
-            : new \ReflectionFunction($callable);
-        return $this->getArguments($reflection);
+            ? new ReflectionMethod(...$callable)
+            : new ReflectionFunction($callable);
+        return array_merge(...array_map(
+            [$this, 'resolveParameter'],
+            $reflection->getParameters(),
+        ));
     }
 
     /**
-     * Resolve arguments for the given callable.
+     * Resolve a parameter of a named type.
      */
-    protected function getArguments(
-        \ReflectionFunctionAbstract $reflection,
-    ): array {
-        // Get parameters.
-        $parameters = $reflection->getParameters();
-
-        // Parse parameters.
-        $arguments = [];
-        foreach ($parameters as $param) {
-            $this->pushArgument($arguments, $param);
-        }
-
-        return $arguments;
-    }
-
-    /**
-     * Push one or more items to the argument list from a reflection parameter.
-     */
-    protected function pushArgument(
-        array &$arguments,
-        \ReflectionParameter $parameter,
-    ): void {
-        // Get type.
-        $type = $parameter->getType();
-
-        // Handle untyped parameter.
-        if ($type === null) {
-            $this->pushUntypedArgument($arguments, $parameter);
-            return;
-        }
-
-        // Handle named type parameter.
-        if ($type instanceof \ReflectionNamedType) {
-            $this->pushNamedTypeArgument($arguments, $type, $parameter);
-            return;
-        }
-
-        // Fail if there are intersection or union type parameters.
-        $message = 'Cannot resolve union or intersection type parameter %s.';
-        throw new \RuntimeException(sprintf($message, (string) $type));
-    }
-
-    /**
-     * Push one or more items to the argument list with a named type.
-     */
-    protected function pushNamedTypeArgument(
-        array &$arguments,
-        \ReflectionNamedType $type,
-        \ReflectionParameter $parameter,
-    ): void {
-        // Get type name.
+    protected function resolveNamedType(ReflectionParameter $parameter, ReflectionNamedType $type): array
+    {
         $name = $type->getName();
-
-        // Handle valid type.
         if ($this->repo->hasDependency($name)) {
             $arguments[] = $this->repo->getValue($name);
             if ($parameter->isVariadic()) {
@@ -147,40 +103,52 @@ class Resolver
                     $arguments[] = $this->repo->getValue($name);
                 }
             }
-            return;
+            return $arguments;
+            // return $parameter->isVariadic()
+            //     ? $this->repo->getValues($name)
+            //     : $this->repo->getValue($name);
+        } elseif ($parameter->isDefaultValueAvailable()) {
+            return [$parameter->getDefaultValue()];
+        } elseif ($parameter->allowsNull()) {
+            return [null];
+        } else {
+            $message = 'Could not resolve parameter of type %s.';
+            throw new \RuntimeException(sprintf($message, (string) $type));
         }
-
-        // Check for default value.
-        if ($parameter->isDefaultValueAvailable()) {
-            $arguments[] = $parameter->getDefaultValue();
-            return;
-        }
-
-        // Check nullability
-        if ($type->allowsNull()) {
-            $arguments[] = null;
-            return;
-        }
-
-        // Fail to resolve.
-        $message = 'Could not resolve required argument of type %s.';
-        throw new \RuntimeException(sprintf($message, $name));
     }
 
     /**
-     * Push one or more items to the argument list without a type.
+     * Resolve a single parameter.
      */
-    protected function pushUntypedArgument(
-        array &$arguments,
-        \ReflectionParameter $parameter,
-    ): void {
-        // Check for default value.
-        if ($parameter->isDefaultValueAvailable()) {
-            $arguments[] = $parameter->getDefaultValue();
-            return;
+    protected function resolveParameter(ReflectionParameter $parameter): array
+    {
+        $type = $parameter->getType();
+        if ($type === null) {
+            return $this->resolveUnknownType($parameter);
+        } elseif ($type instanceof ReflectionNamedType) {
+            return $this->resolveNamedType($parameter, $type);
+        } elseif ($type instanceof ReflectionUnionType) {
+            throw new RuntimeException('Cannot resolve union types.');
+        } elseif ($type instanceof ReflectionIntersectionType) {
+            throw new RuntimeException('Cannot resolve intersection types.');
+        } else {
+            // @codeCoverageIgnoreStart
+            throw new \RuntimeException('Unhandled parameter type.');
+            // @codeCoverageIgnoreEnd
         }
+    }
 
-        // Push null.
-        $arguments[] = null;
+    /**
+     * Resolve a parameter of an unspecified type.
+     */
+    protected function resolveUnknownType(ReflectionParameter $parameter): array
+    {
+        if ($parameter->isVariadic()) {
+            return [];
+        } elseif ($parameter->isDefaultValueAvailable()) {
+            return [$parameter->getDefaultValue()];
+        } else {
+            return [null];
+        }
     }
 }
