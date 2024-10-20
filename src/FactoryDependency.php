@@ -28,26 +28,34 @@
 
 namespace Laucov\Injection;
 
-use Laucov\Injection\Interfaces\DependencyInterface;
+use Laucov\Injection\Interfaces\DynamicDependencyInterface;
 
 /**
  * Stores a factory function or method as a dependency.
  */
-class FactoryDependency implements DependencyInterface
+class FactoryDependency implements DynamicDependencyInterface
 {
     /**
-     * Registered factory function/method.
+     * Function/method to get values.
      * 
      * @var callable
      */
-    protected mixed $callable;
+    protected mixed $getter;
+
+    /**
+     * Function/method to check if there are remanining values.
+     * 
+     * @var null|callable
+     */
+    protected mixed $tester;
 
     /**
      * Create the dependency instance.
      */
-    public function __construct(mixed $source)
+    public function __construct(array|callable $get, null|array|callable $has = null)
     {
-        $this->callable = $source;
+        $this->getter = $get;
+        $this->tester = $has;
     }
 
     /**
@@ -55,6 +63,14 @@ class FactoryDependency implements DependencyInterface
      */
     public function get(): mixed
     {
-        return ($this->callable)();
+        return call_user_func($this->getter);
+    }
+
+    /**
+     * Check if there are new values to come.
+     */
+    public function has(): bool
+    {
+        return $this->tester === null ? true : call_user_func($this->tester);
     }
 }

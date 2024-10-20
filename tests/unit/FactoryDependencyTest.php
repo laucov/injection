@@ -41,18 +41,109 @@ use stdClass;
 class FactoryDependencyTest extends TestCase
 {
     /**
+     * Provide callables and expectations.
+     */
+    public function provideFactories(): array
+    {
+        $number = 0;
+        $function = function () use (&$number) {
+            $value = $number;
+            $number++;
+            return $value;
+        };
+        $object = new class {
+            public static int $number = 2;
+            public static function getCurrentNumber(): int
+            {
+                return static::$number;
+            }
+            public static function getNextNumber(): int
+            {
+                $number = static::$number;
+                static::$number *= 2;
+                return $number;
+            }
+            public static function hasNumber(): bool
+            {
+                return static::$number < 16;
+            }
+            protected int $index = 0;
+            protected array $records = [
+                ['id' => 3, 'name' => 'John'],
+                ['id' => 5, 'name' => 'Mary'],
+                ['id' => 11, 'name' => 'Gary'],
+            ];
+            public function getCurrentName(): string
+            {
+                return $this->records[$this->index]['name'];
+            }
+            public function getNextName(): string
+            {
+                $name = $this->records[$this->index]['name'];
+                $this->index++;
+                return $name;
+            }
+            public function hasName(): bool
+            {
+                return isset($this->records[$this->index]);
+            }
+        };
+        return [
+            'function' => [
+                $function,
+                null,
+                [0, 1, 2, 3, 4, 5, 6],
+            ],
+            'function (with tester)' => [
+                $function,
+                function () use (&$number) {
+                    return $number < 8;
+                },
+                [7],
+            ],
+            'instance' => [
+                [$object, 'getCurrentName'],
+                null,
+                ['John', 'John', 'John', 'John'],
+            ],
+            'instance (with tester)' => [
+                [$object, 'getNextName'],
+                [$object, 'hasName'],
+                ['John', 'Mary', 'Gary'],
+            ],
+            'class' => [
+                [$object::class, 'getCurrentNumber'],
+                null,
+                [2, 2, 2, 2],
+            ],
+            'class (with tester)' => [
+                [$object::class, 'getNextNumber'],
+                [$object::class, 'hasNumber'],
+                [2, 4, 8],
+            ],
+        ];
+    }
+
+    /**
      * @covers ::__construct
      * @covers ::get
+     * @covers ::has
+     * @dataProvider provideFactories
      */
-    public function testCanSetAndGet(): void
-    {
-        $object = new stdClass;
-        $object->value = 2;
-        $callable = fn () => $object->value * 2;
-        $dependency = new FactoryDependency($callable);
-        $this->assertInstanceOf(DependencyInterface::class, $dependency);
-        $this->assertSame(4, $dependency->get());
-        $object->value = 5;
-        $this->assertSame(10, $dependency->get());
+    public function testGetsValues(
+        array|callable $get,
+        null|array|callable $has,
+        array $values,
+    ): void {
+        $dependency = new FactoryDependency($get, $has);
+        foreach ($values as $value) {
+            $this->assertTrue($dependency->has());
+            $this->assertSame($value, $dependency->get());
+        }
+        if ($has === null) {
+            $this->assertTrue($dependency->has());
+        } else {
+            $this->assertFalse($dependency->has());
+        }
     }
 }
