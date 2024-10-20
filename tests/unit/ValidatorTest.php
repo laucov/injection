@@ -46,7 +46,7 @@ class ValidatorTest extends TestCase
      */
     public function callableValidationProvider(): array
     {
-        $object = new class {
+        $object = new class () {
             public function a(string $arg)
             {
             }

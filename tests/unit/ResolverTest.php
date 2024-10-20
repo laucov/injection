@@ -36,7 +36,6 @@ use Laucov\Injection\Resolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use stdClass;
 
 /**
  * @coversDefaultClass \Laucov\Injection\Resolver
@@ -58,7 +57,7 @@ class ResolverTest extends TestCase
      */
     public static function provideCallables(): array
     {
-        $object = new class {
+        $object = new class () {
             public static function divideByThree(int $number): int
             {
                 return $number / 3;
@@ -88,7 +87,7 @@ class ResolverTest extends TestCase
     {
         return [
             'anonymous w/o constructor' => [
-                (new class {})::class,
+                (new class () {})::class,
             ],
             'anonymous with constructor' => [
                 (new class ('', 0) {

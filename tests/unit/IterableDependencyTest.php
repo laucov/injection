@@ -30,7 +30,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Laucov\Injection\Interfaces\DynamicDependencyInterface;
 use Laucov\Injection\IterableDependency;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

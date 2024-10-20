@@ -30,10 +30,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\FactoryDependency;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 /**
  * @coversDefaultClass \Laucov\Injection\FactoryDependency
@@ -51,7 +49,7 @@ class FactoryDependencyTest extends TestCase
             $number++;
             return $value;
         };
-        $object = new class {
+        $object = new class () {
             public static int $number = 2;
             public static function getCurrentNumber(): int
             {

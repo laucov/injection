@@ -85,7 +85,7 @@ class RepositoryTest extends TestCase
 
         // Set factory function.
         // Also test if can replace a type in the repository (replacing `int`).
-        $object = new stdClass;
+        $object = new stdClass();
         $object->value = 0;
         $factory = fn () => $object->value++;
         $this->repo->setFactory('int', $factory);
