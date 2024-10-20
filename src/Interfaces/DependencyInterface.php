@@ -34,11 +34,6 @@ namespace Laucov\Injection\Interfaces;
 interface DependencyInterface
 {
     /**
-     * Create the dependency instance.
-     */
-    public function __construct(mixed $source);
-
-    /**
      * Get the next value.
      */
     public function get(): mixed;
