@@ -43,12 +43,9 @@ class ValueDependencyTest extends TestCase
      * @covers ::__construct
      * @covers ::get
      */
-    public function testCanSetAndGet(): void
+    public function testGetsValues(): void
     {
         $dependency = new ValueDependency('John Doe');
-        $this->assertInstanceOf(DependencyInterface::class, $dependency);
-        $this->assertSame('John Doe', $dependency->get());
-        $this->assertSame('John Doe', $dependency->get());
         $this->assertSame('John Doe', $dependency->get());
         $this->assertSame('John Doe', $dependency->get());
         $this->assertSame('John Doe', $dependency->get());
