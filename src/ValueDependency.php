@@ -57,6 +57,14 @@ class ValueDependency implements DependencyInterface
     }
 
     /**
+     * Get all available values.
+     */
+    public function getAll(): array
+    {
+        return [$this->value];
+    }
+
+    /**
      * Check whether a value is currently available.
      */
     public function has(): bool

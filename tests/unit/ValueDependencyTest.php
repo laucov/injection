@@ -40,10 +40,25 @@ class ValueDependencyTest extends TestCase
 {
     /**
      * @covers ::__construct
+     * @covers ::getAll
+     * @covers ::has
+     */
+    public function testGetsAllValues(): void
+    {
+        $dependency = new ValueDependency('Hello, World!');
+        $this->assertTrue($dependency->has());
+        $this->assertEquals(['Hello, World!'], $dependency->getAll());
+        $this->assertTrue($dependency->has());
+        $this->assertEquals(['Hello, World!'], $dependency->getAll());
+        $this->assertTrue($dependency->has());
+    }
+
+    /**
+     * @covers ::__construct
      * @covers ::get
      * @covers ::has
      */
-    public function testGetsValues(): void
+    public function testGetsSingleValues(): void
     {
         $dependency = new ValueDependency('John Doe');
         $this->assertTrue($dependency->has());

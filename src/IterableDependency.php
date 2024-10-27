@@ -55,12 +55,24 @@ class IterableDependency implements DependencyInterface
     public function get(): mixed
     {
         if (key($this->iterable) === null) {
-            $message = 'No remaining values in iterable dependency.';
+            $message = 'No available values in iterable dependency.';
             throw new RuntimeException($message);
         }
         $value = current($this->iterable);
         next($this->iterable);
         return $value;
+    }
+
+    /**
+     * Get all available values.
+     */
+    public function getAll(): array
+    {
+        $values = [];
+        while ($this->has()) {
+            $values[] = $this->get();
+        }
+        return $values;
     }
 
     /**

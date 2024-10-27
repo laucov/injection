@@ -39,6 +39,11 @@ interface DependencyInterface
     public function get(): mixed;
 
     /**
+     * Get all available values.
+     */
+    public function getAll(): array;
+
+    /**
      * Check whether a value is currently available.
      */
     public function has(): bool;

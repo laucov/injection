@@ -125,6 +125,7 @@ class FactoryDependencyTest extends TestCase
     /**
      * @covers ::__construct
      * @covers ::get
+     * @covers ::getAll
      * @covers ::has
      * @dataProvider provideFactories
      */
@@ -143,5 +144,6 @@ class FactoryDependencyTest extends TestCase
         } else {
             $this->assertFalse($dependency->has());
         }
+        $this->assertEquals([], $dependency->getAll());
     }
 }

@@ -67,6 +67,14 @@ class FactoryDependency implements DependencyInterface
     }
 
     /**
+     * Get all available values.
+     */
+    public function getAll(): array
+    {
+        return [];
+    }
+
+    /**
      * Check if there are new values to come.
      */
     public function has(): bool

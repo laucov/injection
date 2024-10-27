@@ -40,11 +40,25 @@ use RuntimeException;
 class IterableDependencyTest extends TestCase
 {
     /**
+     * @covers ::getAll
+     * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\IterableDependency::get
+     * @uses Laucov\Injection\IterableDependency::has
+     */
+    public function testGetsAllValues(): void
+    {
+        $dependency = new IterableDependency(['abcdef', 3.14, 42]);
+        $this->assertTrue($dependency->has());
+        $this->assertEquals(['abcdef', 3.14, 42], $dependency->getAll());
+        $this->assertFalse($dependency->has());
+    }
+
+    /**
      * @covers ::__construct
      * @covers ::get
      * @covers ::has
      */
-    public function testChecksAndGetsValues(): void
+    public function testGetsSingleValues(): void
     {
         $dependency = new IterableDependency(['foo', 'bar', 'baz']);
         $this->assertTrue($dependency->has());
@@ -55,6 +69,8 @@ class IterableDependencyTest extends TestCase
         $this->assertSame('baz', $dependency->get());
         $this->assertFalse($dependency->has());
         $this->expectException(RuntimeException::class);
+        $message = 'No available values in iterable dependency.';
+        $this->expectExceptionMessage($message);
         $dependency->get();
     }
 }
