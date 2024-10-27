@@ -117,13 +117,8 @@ class RepositoryTest extends TestCase
      * @covers ::setIterable
      * @covers ::setValue
      * @uses Laucov\Injection\FactoryDependency::__construct
-     * @uses Laucov\Injection\FactoryDependency::get
      * @uses Laucov\Injection\IterableDependency::__construct
-     * @uses Laucov\Injection\IterableDependency::get
-     * @uses Laucov\Injection\IterableDependency::has
      * @uses Laucov\Injection\ValueDependency::__construct
-     * @uses Laucov\Injection\ValueDependency::get
-     * @uses Laucov\Injection\ValueDependency::has
      */
     public function testSetsDependencies(): void
     {
