@@ -51,6 +51,14 @@ class Repository
     }
 
     /**
+     * Get all values of a dependency.
+     */
+    public function getValues(string $name): array
+    {
+        return $this->dependencies[$name]->getAll();
+    }
+
+    /**
      * Check whether a dependency type is registered.
      */
     public function hasDependency(string $name): bool
@@ -69,9 +77,10 @@ class Repository
     /**
      * Remove a dependency.
      */
-    public function removeDependency(string $name): void
+    public function removeDependency(string $name): static
     {
         unset($this->dependencies[$name]);
+        return $this;
     }
 
     /**

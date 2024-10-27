@@ -44,6 +44,71 @@ class RepositoryTest extends TestCase
 
     /**
      * @covers ::getValue
+     * @covers ::getValues
+     * @covers ::hasValue
+     * @uses Laucov\Injection\Repository::setCustom
+     */
+    public function testGetsValues(): void
+    {
+        $custom_a = $this->createMock(DependencyInterface::class);
+        $custom_a
+            ->expects($this->exactly(3))
+            ->method('has')
+            ->willReturnOnConsecutiveCalls(true, true, false);
+        $custom_a
+            ->expects($this->exactly(2))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls('John', 'Mary');
+        $custom_b = $this->createMock(DependencyInterface::class);
+        $custom_b
+            ->expects($this->once())
+            ->method('get')
+            ->willReturn(42);
+        $custom_b
+            ->expects($this->exactly(2))
+            ->method('has')
+            ->willReturnOnConsecutiveCalls(true, false);
+        $custom_c = $this->createMock(DependencyInterface::class);
+        $custom_c
+            ->expects($this->once())
+            ->method('getAll')
+            ->willReturn([1.25, 1.5, 1.75]);
+        $custom_c
+            ->expects($this->exactly(2))
+            ->method('has')
+            ->willReturnOnConsecutiveCalls(true, false);
+        $custom_d = $this->createMock(DependencyInterface::class);
+        $custom_d
+            ->expects($this->once())
+            ->method('get')
+            ->willReturn(99);
+        $custom_d
+            ->expects($this->exactly(2))
+            ->method('has')
+            ->willReturnOnConsecutiveCalls(true, false);
+        $this->repo
+            ->setCustom('string', $custom_a)
+            ->setCustom('int', $custom_b)
+            ->setCustom('float', $custom_c);
+        $this->assertTrue($this->repo->hasValue('string'));
+        $this->assertSame('John', $this->repo->getValue('string'));
+        $this->assertTrue($this->repo->hasValue('string'));
+        $this->assertSame('Mary', $this->repo->getValue('string'));
+        $this->assertFalse($this->repo->hasValue('string'));
+        $this->assertTrue($this->repo->hasValue('int'));
+        $this->assertSame(42, $this->repo->getValue('int'));
+        $this->assertFalse($this->repo->hasValue('int'));
+        $this->assertTrue($this->repo->hasValue('float'));
+        $this->assertEquals([1.25, 1.5, 1.75], $this->repo->getValues('float'));
+        $this->assertFalse($this->repo->hasValue('float'));
+        $this->repo->setCustom('int', $custom_d);
+        $this->assertTrue($this->repo->hasValue('int'));
+        $this->assertSame(99, $this->repo->getValue('int'));
+        $this->assertFalse($this->repo->hasValue('int'));
+    }
+
+    /**
+     * @covers ::getValue
      * @covers ::hasDependency
      * @covers ::hasValue
      * @covers ::removeDependency
@@ -60,71 +125,33 @@ class RepositoryTest extends TestCase
      * @uses Laucov\Injection\ValueDependency::get
      * @uses Laucov\Injection\ValueDependency::has
      */
-    public function testCanSetDependencies(): void
+    public function testSetsDependencies(): void
     {
-        // Set absolute values.
+        $this->assertFalse($this->repo->hasDependency('float'));
+        $this->assertFalse($this->repo->hasDependency('string'));
+        $this->assertFalse($this->repo->hasDependency('int'));
+        $this->assertFalse($this->repo->hasDependency('bool'));
         $this->repo
+            ->setIterable('float', [0.00, 0.25, 0.50, 0.75, 1.00])
             ->setValue('string', 'John')
             ->setValue('int', 42);
-        $this->assertTrue($this->repo->hasValue('string'));
-        $this->assertTrue($this->repo->hasValue('int'));
-        $this->assertSame('John', $this->repo->getValue('string'));
-        $this->assertSame(42, $this->repo->getValue('int'));
-        $this->assertTrue($this->repo->hasValue('string'));
-        $this->assertTrue($this->repo->hasValue('int'));
-
-        // Set iterable values.
-        $this->repo->setIterable('float', [0.00, 0.25, 0.50, 0.75, 1.00]);
-        $this->assertSame(0.00, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
-        $this->assertSame(0.25, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
-        $this->assertSame(0.50, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
-        $this->assertSame(0.75, $this->repo->getValue('float'));
-        $this->assertTrue($this->repo->hasValue('float'));
-        $this->assertSame(1.00, $this->repo->getValue('float'));
-        $this->assertFalse($this->repo->hasValue('float'));
-
-        // Set custom dependency.
+        $this->assertTrue($this->repo->hasDependency('float'));
+        $this->assertTrue($this->repo->hasDependency('string'));
+        $this->assertTrue($this->repo->hasDependency('int'));
         $this->assertFalse($this->repo->hasDependency('bool'));
-        $custom = $this->createMock(DependencyInterface::class);
-        $custom
-            ->expects($this->exactly(2))
-            ->method('get')
-            ->willReturnOnConsecutiveCalls(false, true);
-        $custom
-            ->expects($this->exactly(3))
-            ->method('has')
-            ->willReturnOnConsecutiveCalls(true, true, false);
-        $this->repo->setCustom('bool', $custom);
-        $this->assertTrue($this->repo->hasDependency('bool'));
-        $this->assertTrue($this->repo->hasValue('bool'));
-        $this->assertSame(false, $this->repo->getValue('bool'));
-        $this->assertTrue($this->repo->hasValue('bool'));
-        $this->assertSame(true, $this->repo->getValue('bool'));
-        $this->assertFalse($this->repo->hasValue('bool'));
-
-        // Set factory function.
-        // Also test if can replace a type in the repository (replacing `int`).
         $object = new stdClass();
         $object->value = 0;
         $factory = fn () => $object->value++;
-        $this->repo->setFactory('int', $factory);
-        $this->assertSame(0, $this->repo->getValue('int'));
-        $this->assertSame(1, $this->repo->getValue('int'));
-        $this->assertSame(2, $this->repo->getValue('int'));
-
-        // Check dependency existence.
-        $this->assertTrue($this->repo->hasDependency('string'));
+        $custom = $this->createMock(DependencyInterface::class);
+        $this->repo
+            ->setFactory('float', $factory)
+            ->setCustom('bool', $custom)
+            ->removeDependency('string')
+            ->setValue('int', 99);
+        $this->assertTrue($this->repo->hasDependency('float'));
+        $this->assertFalse($this->repo->hasDependency('string'));
         $this->assertTrue($this->repo->hasDependency('int'));
-        $this->assertTrue($this->repo->hasDependency('float'));
-        $this->assertFalse($this->repo->hasDependency('array'));
-
-        // Remove dependency.
-        $this->assertTrue($this->repo->hasDependency('float'));
-        $this->repo->removeDependency('float');
-        $this->assertFalse($this->repo->hasDependency('float'));
+        $this->assertTrue($this->repo->hasDependency('bool'));
     }
 
     /**
