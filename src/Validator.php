@@ -30,6 +30,8 @@ namespace Laucov\Injection;
 
 /**
  * Validates dependencies for callables.
+ * 
+ * @deprecated 2.0.0 Resolve arguments with `Resolver` and store them.
  */
 class Validator
 {
