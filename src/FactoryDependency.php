@@ -32,6 +32,8 @@ use Laucov\Injection\Interfaces\DependencyInterface;
 
 /**
  * Stores a factory function or method as a dependency.
+ * 
+ * @deprecated 2.0.0 Implement `DependencyInterface` with custom class instead.
  */
 class FactoryDependency implements DependencyInterface
 {

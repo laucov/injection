@@ -94,6 +94,8 @@ class Repository
 
     /**
      * Set a factory function to get dependencies from.
+     * 
+     * @deprecated 2.0.0 Use `setCustom()` with custom dependencies instead.
      */
     public function setFactory(string $name, callable $factory): static
     {
