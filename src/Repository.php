@@ -75,6 +75,15 @@ class Repository
     }
 
     /**
+     * Set a custom implementation of `DependencyInterface`.
+     */
+    public function setCustom(string $name, DependencyInterface $custom): static
+    {
+        $this->dependencies[$name] = $custom;
+        return $this;
+    }
+
+    /**
      * Set a factory function to get dependencies from.
      */
     public function setFactory(string $name, callable $factory): static

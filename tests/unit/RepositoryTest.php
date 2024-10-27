@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\Repository;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -46,6 +47,7 @@ class RepositoryTest extends TestCase
      * @covers ::hasDependency
      * @covers ::hasValue
      * @covers ::removeDependency
+     * @covers ::setCustom
      * @covers ::setFactory
      * @covers ::setIterable
      * @covers ::setValue
@@ -83,6 +85,25 @@ class RepositoryTest extends TestCase
         $this->assertTrue($this->repo->hasValue('float'));
         $this->assertSame(1.00, $this->repo->getValue('float'));
         $this->assertFalse($this->repo->hasValue('float'));
+
+        // Set custom dependency.
+        $this->assertFalse($this->repo->hasDependency('bool'));
+        $custom = $this->createMock(DependencyInterface::class);
+        $custom
+            ->expects($this->exactly(2))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls(false, true);
+        $custom
+            ->expects($this->exactly(3))
+            ->method('has')
+            ->willReturnOnConsecutiveCalls(true, true, false);
+        $this->repo->setCustom('bool', $custom);
+        $this->assertTrue($this->repo->hasDependency('bool'));
+        $this->assertTrue($this->repo->hasValue('bool'));
+        $this->assertSame(false, $this->repo->getValue('bool'));
+        $this->assertTrue($this->repo->hasValue('bool'));
+        $this->assertSame(true, $this->repo->getValue('bool'));
+        $this->assertFalse($this->repo->hasValue('bool'));
 
         // Set factory function.
         // Also test if can replace a type in the repository (replacing `int`).
