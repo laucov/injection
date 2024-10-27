@@ -230,7 +230,7 @@ class ResolverTest extends TestCase
             });
         $this->repository
             ->method('hasValue')
-            ->willReturnOnConsecutiveCalls(true, true, false);
+            ->willReturn(true);
         $this->repository
             ->method('getValue')
             ->willReturnMap([
@@ -238,6 +238,11 @@ class ResolverTest extends TestCase
                 ['int', 999],
                 ['object', (object) ['id' => 1, 'name' => 'John']],
                 ['string', 'foobar'],
+            ]);
+        $this->repository
+            ->method('getValues')
+            ->willReturnMap([
+                ['string', ['foobar', 'foobar', 'foobar']],
             ]);
         $this->resolver = new Resolver($this->repository);
     }

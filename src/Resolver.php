@@ -101,16 +101,9 @@ class Resolver
     {
         $name = $type->getName();
         if ($this->repo->hasDependency($name)) {
-            $arguments[] = $this->repo->getValue($name);
-            if ($parameter->isVariadic()) {
-                while ($this->repo->hasValue($name)) {
-                    $arguments[] = $this->repo->getValue($name);
-                }
-            }
-            return $arguments;
-            // return $parameter->isVariadic()
-            //     ? $this->repo->getValues($name)
-            //     : $this->repo->getValue($name);
+            return $parameter->isVariadic()
+                ? $this->repo->getValues($name)
+                : [$this->repo->getValue($name)];
         } elseif ($parameter->isDefaultValueAvailable()) {
             return [$parameter->getDefaultValue()];
         } elseif ($parameter->allowsNull()) {
