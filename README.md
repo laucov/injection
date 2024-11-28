@@ -267,10 +267,90 @@ Welcome to Time Printer v1.2.1
 Current time is 1730041394
 ```
 
+### Class name fallbacks
+
+Child classes can be used to fullfil its parents.
+
+```php
+use Laucov\Injection\Repository;
+use Laucov\Injection\Resolver;
+
+require __DIR__ . '/vendor/autoload.php';
+
+abstract class Animal
+{
+    public const CELL_TYPE = 'eukaryotic';
+}
+
+abstract class Bird extends Animal
+{
+    public abstract function sing(): string;
+}
+
+abstract class Mammal
+{
+    public abstract function yell(): string;
+}
+
+class Duck extends Bird
+{
+    public function sing(): string
+    {
+        return 'Quack!';
+    }
+}
+
+class Owl extends Bird
+{
+    public function sing(): string
+    {
+        return 'Who!';
+    }
+}
+
+class Person extends Mammal
+{
+    public function yell(): string
+    {
+        return 'Aaaaaaaah!';
+    }
+}
+
+class Lion extends Mammal
+{
+    public function yell(): string
+    {
+        return 'Roaaaaaar!';
+    }
+}
+
+$repository = new Repository;
+$resolver = new Resolver($repository);
+$duck = new Duck;
+$lion = new Lion;
+$owl = new Owl;
+$person = new Person;
+$repository
+    ->setValue(Duck::class, $duck)
+    ->setValue(Lion::class, $lion)
+    ->setValue(Owl::class, $owl)
+    ->setValue(Person::class, $person)
+    ->fallback(Duck::class)
+    ->fallback(Lion::class);
+echo $resolver->call(fn (Bird $bird) => $bird->sing() . PHP_EOL);
+echo $resolver->call(fn (Mammal $mammal) => $mammal->yell() . PHP_EOL);
+```
+
+Output:
+
+```text
+Quack!
+Roaaaaaar!
+```
+
 ## Next features
 
-| Method | Description |
+| Feature | Description |
 | ------ | ----------- |
 | `Resolver::alias()` | Alias a dependency name |
-| `Resolver::fallback()` | Allow a class to be returned when its parents are requested and not found |
 | `Resolver::redirect()` | Assign another repository to handle a dependency name |
