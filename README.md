@@ -266,3 +266,11 @@ Output:
 Welcome to Time Printer v1.2.1
 Current time is 1730041394
 ```
+
+## Next features
+
+| Method | Description |
+| ------ | ----------- |
+| `Resolver::alias()` | Alias a dependency name |
+| `Resolver::fallback()` | Allow a class to be returned when its parents are requested and not found |
+| `Resolver::redirect()` | Assign another repository to handle a dependency name |
