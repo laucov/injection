@@ -78,7 +78,9 @@ class ValidatorTest extends TestCase
      * @covers ::validate
      * @covers ::validateParameter
      * @uses Laucov\Injection\IterableDependency::__construct
+     * @uses Laucov\Injection\Repository::find
      * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::resolve
      * @uses Laucov\Injection\Repository::setIterable
      * @uses Laucov\Injection\Repository::setValue
      * @uses Laucov\Injection\ValueDependency::__construct

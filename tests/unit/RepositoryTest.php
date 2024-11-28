@@ -33,6 +33,7 @@ namespace Tests\Unit;
 use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\Repository;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -43,9 +44,19 @@ class RepositoryTest extends TestCase
     protected Repository $repo;
 
     /**
+     * Provide names of methods that must break when a depedency is not found.
+     */
+    public static function provideBreakableMethods(): array
+    {
+        return [['getValue'], ['getValues'], ['hasValue']];
+    }
+
+    /**
      * @covers ::getValue
      * @covers ::getValues
      * @covers ::hasValue
+     * @uses Laucov\Injection\Repository::require
+     * @uses Laucov\Injection\Repository::resolve
      * @uses Laucov\Injection\Repository::setCustom
      */
     public function testGetsValues(): void
@@ -108,10 +119,28 @@ class RepositoryTest extends TestCase
     }
 
     /**
+     * @covers ::require
+     * @uses Laucov\Injection\Repository::find
+     * @uses Laucov\Injection\Repository::hasValue
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::getValues
+     * @uses Laucov\Injection\Repository::resolve
+     * @dataProvider provideBreakableMethods
+     */
+    public function testPanicsIfCanRequireDependencies(string $method): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Dependency "string" not found.');
+        $this->repo->{$method}('string');
+    }
+
+    /**
+     * @covers ::find
      * @covers ::getValue
      * @covers ::hasDependency
      * @covers ::hasValue
      * @covers ::removeDependency
+     * @covers ::resolve
      * @covers ::setCustom
      * @covers ::setFactory
      * @covers ::setIterable
@@ -150,10 +179,96 @@ class RepositoryTest extends TestCase
     }
 
     /**
+     * @covers ::fallback
+     * @covers ::find
+     * @covers ::resolve
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::getValues
+     * @uses Laucov\Injection\Repository::hasDependency
+     * @uses Laucov\Injection\Repository::hasValue
+     * @uses Laucov\Injection\Repository::require
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::has
+     * @uses Laucov\Injection\ValueDependency::get
+     * @uses Laucov\Injection\ValueDependency::getAll
+     */
+    public function testSetsFallbacks(): void
+    {
+        $duck = new Duck;
+        $lion = new Lion;
+        $owl = new Owl;
+        $person = new Person;
+        $this->repo
+            ->setValue(Duck::class, $duck)
+            ->setValue(Lion::class, $lion)
+            ->setValue(Owl::class, $owl)
+            ->setValue(Person::class, $person);
+        $this->assertFalse($this->repo->hasDependency(Animal::class));
+        $this->assertFalse($this->repo->hasDependency(Bird::class));
+        $this->assertFalse($this->repo->hasDependency(Mammal::class));
+        $this->repo->fallback(Duck::class);
+        $this->assertTrue($this->repo->hasDependency(Animal::class));
+        $this->assertTrue($this->repo->hasDependency(Bird::class));
+        $this->assertFalse($this->repo->hasDependency(Mammal::class));
+        $this->assertTrue($this->repo->hasValue(Animal::class));
+        $this->assertTrue($this->repo->hasValue(Bird::class));
+        $this->assertSame($duck, $this->repo->getValue(Animal::class));
+        $this->assertSame([$duck], $this->repo->getValues(Animal::class));
+    }
+
+    /**
      * This method is called before each test.
      */
     protected function setUp(): void
     {
         $this->repo = new Repository();
+    }
+}
+
+abstract class Animal
+{
+    public const CELL_TYPE = 'eukaryotic';
+}
+
+abstract class Bird extends Animal
+{
+    public abstract function sing(): string;
+}
+
+abstract class Mammal
+{
+    public abstract function yell(): string;
+}
+
+class Duck extends Bird
+{
+    public function sing(): string
+    {
+        return 'Quack!';
+    }
+}
+
+class Owl extends Bird
+{
+    public function sing(): string
+    {
+        return 'Who!';
+    }
+}
+
+class Person extends Mammal
+{
+    public function yell(): string
+    {
+        return 'Aaaaaaaah!';
+    }
+}
+
+class Lion extends Mammal
+{
+    public function yell(): string
+    {
+        return 'Roaaaaaar!';
     }
 }

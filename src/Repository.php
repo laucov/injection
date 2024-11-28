@@ -29,6 +29,7 @@
 namespace Laucov\Injection;
 
 use Laucov\Injection\Interfaces\DependencyInterface;
+use RuntimeException;
 
 /**
  * Stores dependency sources.
@@ -43,11 +44,25 @@ class Repository
     protected array $dependencies = [];
 
     /**
+     * Fallback classes.
+     */
+    public array $fallbacks = [];
+
+    /**
+     * Return a class when its parents are requested and not found.
+     */
+    public function fallback(string $name): static
+    {
+        $this->fallbacks[] = $name;
+        return $this;
+    }
+
+    /**
      * Get a dependency value.
      */
     public function getValue(string $name): mixed
     {
-        return $this->dependencies[$name]->get();
+        return $this->require($name)->get();
     }
 
     /**
@@ -55,7 +70,7 @@ class Repository
      */
     public function getValues(string $name): array
     {
-        return $this->dependencies[$name]->getAll();
+        return $this->require($name)->getAll();
     }
 
     /**
@@ -63,7 +78,7 @@ class Repository
      */
     public function hasDependency(string $name): bool
     {
-        return array_key_exists($name, $this->dependencies);
+        return $this->resolve($name) !== null;
     }
 
     /**
@@ -71,7 +86,7 @@ class Repository
      */
     public function hasValue(string $name): bool
     {
-        return $this->dependencies[$name]->has();
+        return $this->require($name)->has();
     }
 
     /**
@@ -119,5 +134,43 @@ class Repository
     {
         $this->dependencies[$name] = new ValueDependency($value);
         return $this;
+    }
+
+    /**
+     * Find a suitable fallback for a dependency name.
+     */
+    protected function find(string $name): null|string
+    {
+        if (class_exists($name)) {
+            foreach ($this->fallbacks as $fallback) {
+                if (is_a($fallback, $name, true)) {
+                    return $fallback;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Require a dependency to exist.
+     */
+    protected function require(string $name): DependencyInterface
+    {
+        $result = $this->resolve($name);
+        if ($result === null) {
+            $message = sprintf('Dependency "%s" not found.', $name);
+            throw new RuntimeException($message);
+        }
+        return $this->dependencies[$result];
+    }
+
+    /**
+     * Resolve a dependency name.
+     */
+    protected function resolve(string $name): null|string
+    {
+        return array_key_exists($name, $this->dependencies)
+            ? $name
+            : $this->find($name);
     }
 }
