@@ -269,7 +269,7 @@ Current time is 1730041394
 
 ### Class name fallbacks
 
-Child classes can be used to fullfil its parents.
+Child classes can be used to fullfil its parents:
 
 ```php
 use Laucov\Injection\Repository;
