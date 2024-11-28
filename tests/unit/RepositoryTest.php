@@ -55,7 +55,7 @@ class RepositoryTest extends TestCase
      * @covers ::getValue
      * @covers ::getValues
      * @covers ::hasValue
-     * @uses Laucov\Injection\Repository::require
+     * @covers ::require
      * @uses Laucov\Injection\Repository::resolve
      * @uses Laucov\Injection\Repository::setCustom
      */
