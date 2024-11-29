@@ -30,8 +30,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use Laucov\Injection\FastDependency;
 use Laucov\Injection\Interfaces\DependencyInterface;
 use Laucov\Injection\Repository;
+use Laucov\Injection\ValueDependency;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use stdClass;
@@ -49,6 +51,61 @@ class RepositoryTest extends TestCase
     public static function provideBreakableMethods(): array
     {
         return [['getValue'], ['getValues'], ['hasValue']];
+    }
+
+    /**
+     * @covers ::addRule
+     * @covers ::createDependency
+     * @covers ::resolve
+     * @uses Laucov\Injection\FastDependency::__construct
+     * @uses Laucov\Injection\FastDependency::get
+     * @uses Laucov\Injection\FastDependency::getAll
+     * @uses Laucov\Injection\FastDependency::has
+     * @uses Laucov\Injection\Repository::find
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::getValues
+     * @uses Laucov\Injection\Repository::hasValue
+     * @uses Laucov\Injection\Repository::require
+     * @uses Laucov\Injection\Repository::resolve
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     * @uses Laucov\Injection\ValueDependency::getAll
+     * @uses Laucov\Injection\ValueDependency::has
+     */
+    public function testAllowsCustomRules(): void
+    {
+        $values = [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+        ];
+        $this->repo
+            ->setValue('int', 999)
+            ->addRule(fn ($name) => str_contains($name, 'int'), 'int')
+            ->addRule(fn ($name) => str_starts_with($name, 'num'), 'integer')
+            ->addRule(
+                fn ($name) => str_starts_with($name, '$'),
+                fn ($name) => match (true) {
+                    $name === '$values' => new ValueDependency($values),
+                    array_key_exists(substr($name, 1), $values) => new FastDependency(fn () => $values[substr($name, 1)]),
+                    default => new ValueDependency(null),
+                },
+            );
+        $this->assertTrue($this->repo->hasValue('number'));
+        $this->assertTrue($this->repo->hasValue('inteiro'));
+        $this->assertTrue($this->repo->hasValue('$values'));
+        $this->assertTrue($this->repo->hasValue('$last_name'));
+        $this->assertTrue($this->repo->hasValue('$foo'));
+        $this->assertSame(999, $this->repo->getValue('number'));
+        $this->assertSame(999, $this->repo->getValue('inteiro'));
+        $this->assertSame($values, $this->repo->getValue('$values'));
+        $this->assertSame('Doe', $this->repo->getValue('$last_name'));
+        $this->assertSame(null, $this->repo->getValue('$bar'));
+        $this->assertSame([999], $this->repo->getValues('number'));
+        $this->assertSame([999], $this->repo->getValues('inteiro'));
+        $this->assertSame([$values], $this->repo->getValues('$values'));
+        $this->assertSame(['John'], $this->repo->getValues('$first_name'));
+        $this->assertSame([null], $this->repo->getValues('$baz'));
     }
 
     /**

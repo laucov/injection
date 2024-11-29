@@ -52,7 +52,36 @@ class Repository
      * 
      * @var array<string>
      */
-    public array $fallbacks = [];
+    protected array $fallbacks = [];
+
+    /**
+     * Registered custom rules.
+     * 
+     * @var array<int, {callable, string}>
+     */
+    protected array $rules = [];
+
+    /**
+     * Add a custom rule to resolve dependency names.
+     * 
+     * @param string|(callable(string $name): DependencyInterface) $resolve
+     */
+    public function addRule(callable $test, string|callable $resolve): static
+    {
+        if (is_string($resolve)) {
+            $name = $resolve;
+        } else {
+            $name = uniqid();
+            $dependency = $this->createDependency($resolve);
+            $this->dependencies[$name] = $dependency;
+            $test = function (string $name) use ($test, $dependency) {
+                $dependency->name = $name;
+                return $test($name);
+            };
+        }
+        $this->rules[] = [$test, $name];
+        return $this;
+    }
 
     /**
      * Return a class when its parents are requested and not found.
@@ -144,6 +173,35 @@ class Repository
     }
 
     /**
+     * Create a dependency from a resolution callback.
+     */
+    protected function createDependency(callable $resolve): DependencyInterface
+    {
+        return new class ($resolve) implements DependencyInterface {
+            public string $name;
+            public function __construct(protected mixed $callback)
+            {
+            }
+            public function get(): mixed
+            {
+                return $this->getDependency()->get();
+            }
+            public function getAll(): array
+            {
+                return $this->getDependency()->getAll();
+            }
+            public function has(): bool
+            {
+                return $this->getDependency()->has();
+            }
+            protected function getDependency(): DependencyInterface
+            {
+                return call_user_func($this->callback, $this->name);
+            }
+        };
+    }
+
+    /**
      * Find a suitable fallback for a dependency name.
      */
     protected function find(string $name): null|string
@@ -176,8 +234,17 @@ class Repository
      */
     protected function resolve(string $name): null|string
     {
-        return array_key_exists($name, $this->dependencies)
-            ? $name
-            : $this->find($name);
+        if (array_key_exists($name, $this->dependencies)) {
+            return $name;
+        } elseif ($found = $this->find($name)) {
+            return $found;
+        } else {
+            foreach ($this->rules as [$test, $result]) {
+                if ($test($name)) {
+                    return $this->resolve($result);
+                }
+            }
+            return null;
+        }
     }
 }
