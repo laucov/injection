@@ -45,8 +45,17 @@ class Repository
 
     /**
      * Fallback classes.
+     * 
+     * @var array<string>
      */
     public array $fallbacks = [];
+
+    /**
+     * Redirections.
+     * 
+     * @var array<string, Repository>
+     */
+    public array $redirects = [];
 
     /**
      * Return a class when its parents are requested and not found.
@@ -78,6 +87,9 @@ class Repository
      */
     public function hasDependency(string $name): bool
     {
+        if (array_key_exists($name, $this->redirects)) {
+            return $this->redirects[$name]->hasDependency($name);
+        }
         return $this->resolve($name) !== null;
     }
 
@@ -87,6 +99,15 @@ class Repository
     public function hasValue(string $name): bool
     {
         return $this->require($name)->has();
+    }
+
+    /**
+     * Redirect a dependency name to another repository.
+     */
+    public function redirect(string $name, Repository $repository): static
+    {
+        $this->redirects[$name] = $repository;
+        return $this;
     }
 
     /**
@@ -156,6 +177,9 @@ class Repository
      */
     protected function require(string $name): DependencyInterface
     {
+        if (array_key_exists($name, $this->redirects)) {
+            return $this->redirects[$name]->require($name);
+        }
         $result = $this->resolve($name);
         if ($result === null) {
             $message = sprintf('Dependency "%s" not found.', $name);

@@ -135,6 +135,32 @@ class RepositoryTest extends TestCase
     }
 
     /**
+     * @covers ::hasDependency
+     * @covers ::redirect
+     * @covers ::require
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::resolve
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     */
+    public function testRedirects(): void
+    {
+        $repository = new Repository;
+        $repository
+            ->setValue('string', 'Hello, World!')
+            ->setValue('int', 123456);
+        $this->repo
+            ->setValue('string', 'Hi, Universe!')
+            ->setValue('int', 654321)
+            ->redirect('string', $repository);
+        $this->assertTrue($this->repo->hasDependency('string'));
+        $this->assertTrue($this->repo->hasDependency('int'));
+        $this->assertSame('Hello, World!', $this->repo->getValue('string'));
+        $this->assertSame(654321, $this->repo->getValue('int'));
+    }
+
+    /**
      * @covers ::find
      * @covers ::getValue
      * @covers ::hasDependency
