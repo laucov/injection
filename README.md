@@ -267,6 +267,45 @@ Welcome to Time Printer v1.2.1
 Current time is 1730041394
 ```
 
+### Fast dependencies
+
+You can shorten the process of creating custom dependencies with the `FastDependency` class:
+
+```php
+use Laucov\Injection\FastDependency;
+use Laucov\Injection\Repository;
+use Laucov\Injection\Resolver;
+
+require __DIR__ . '/vendor/autoload.php';
+
+$count = 1;
+
+$repository = new Repository;
+$resolver = new Resolver($repository);
+$repository->setCustom('int', new FastDependency(
+    get: function () use (&$count) {
+        return $count++;
+    },
+    getAll: function () use (&$count) {
+        $values = $count > 5 ? [] : range($count, 5);
+        $count = 5;
+        return $values;
+    },
+    has: fn () => $count <= 5,
+));
+$resolver->call(function (int $a, int $b, int $c, int ...$others) {
+    echo "a={$a}; b={$b}; c={$c}" . PHP_EOL;
+    echo 'others: ' . implode(',', $others) . PHP_EOL;
+});
+```
+
+Output:
+
+```txt
+a=1; b=2; c=3
+others: 4,5
+```
+
 ### Class name fallbacks
 
 Child classes can be used to fullfil its parents:
@@ -348,9 +387,91 @@ Quack!
 Roaaaaaar!
 ```
 
+### Custom rules
+
+You can set custom resolution rules to run when the `Repository` fails to find a registered dependency name.
+
+#### Returning dependency names
+
+Rules may return dependency names to redirect the dependency request to them:
+
+```php
+use Laucov\Injection\Repository;
+use Laucov\Injection\Resolver;
+
+require __DIR__ . '/vendor/autoload.php';
+
+$repository = new Repository;
+$resolver = new Resolver($repository);
+$repository
+    ->setValue('int', 432)
+    ->addRule(
+        fn ($name) => in_array($name, ['float', 'string']),
+        'int',
+    );
+echo $resolver->call(fn (int $i, float $f, string $s) => var_export([
+    'int' => $i,
+    'float' => $f,
+    'string' => $s,
+])) . PHP_EOL;
+```
+
+Output:
+
+```text
+array (
+  'int' => 432,
+  'float' => 432.0,
+  'string' => '432',
+)
+```
+
+### Returning resolution callbacks
+
+A rule may also be used to provide custom resolution functions istead of name redirections. The function must return a `DependencyInterface` object.
+
+```php
+use Laucov\Injection\FastDependency;
+use Laucov\Injection\Repository;
+use Laucov\Injection\Resolver;
+
+require __DIR__ . '/vendor/autoload.php';
+
+class Calculator
+{
+    public function sum(int $a, int $b): int
+    {
+        return $a + $b;
+    }
+}
+
+class Json
+{
+    public function encode(mixed $subject): string
+    {
+        return json_encode($subject, JSON_PRETTY_PRINT);
+    }
+}
+
+$repository = new Repository;
+$resolver = new Resolver($repository);
+$repository->addRule(
+    fn ($name) => class_exists($name),
+    fn ($name) => new FastDependency(fn () => new $name),
+);
+echo $resolver->call(function (Calculator $calc, Json $json) {
+    return $json->encode(['total' => $calc->sum(5, 6)]);
+}) . PHP_EOL;
+```
+
+Output:
+
+```json
+{
+    "total": 11
+}
+```
+
 ## Next features
 
-- Create resolution rules (condition callback + result callback);
-- Redirect dependencies with aliases;
-- Redirect dependencies with rules;
 - Resolve parameters by name.
