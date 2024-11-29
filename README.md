@@ -283,15 +283,15 @@ $count = 1;
 $repository = new Repository;
 $resolver = new Resolver($repository);
 $repository->setCustom('int', new FastDependency(
-    get: function () use (&$count) {
+    get: function () use (&$count) { // Mandatory
         return $count++;
     },
-    getAll: function () use (&$count) {
+    getAll: function () use (&$count) { // Optional (returns [get()])
         $values = $count > 5 ? [] : range($count, 5);
         $count = 5;
         return $values;
     },
-    has: fn () => $count <= 5,
+    has: fn () => $count <= 5, // Optional (always returns true)
 ));
 $resolver->call(function (int $a, int $b, int $c, int ...$others) {
     echo "a={$a}; b={$b}; c={$c}" . PHP_EOL;
