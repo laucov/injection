@@ -350,6 +350,7 @@ Roaaaaaar!
 
 ## Next features
 
+- Create resolution rules (condition callback + result callback);
 - Redirect dependencies with aliases;
 - Redirect dependencies with rules;
 - Resolve parameters by name.
