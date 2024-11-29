@@ -33,16 +33,13 @@ use RuntimeException;
 
 /**
  * Stores dependency sources.
+ * 
+ * @todo `redirect(string|callable $condition, string|Repository $destination)`
+ * @todo `array<string, string|Repository> $aliases`
+ * @todo `array<{callable, string|Repository}> $rules`
  */
 class Repository
 {
-    /**
-     * Registered aliases.
-     * 
-     * @var array<string, string>
-     */
-    protected array $aliases = [];
-
     /**
      * Registered dependencies.
      * 
@@ -56,22 +53,6 @@ class Repository
      * @var array<string>
      */
     public array $fallbacks = [];
-
-    /**
-     * Registered redirections.
-     * 
-     * @var array<string, Repository>
-     */
-    public array $redirects = [];
-
-    /**
-     * Set an alias to a dependency name.
-     */
-    public function alias(string $name, string $alias): static
-    {
-        $this->aliases[$alias] = $name;
-        return $this;
-    }
 
     /**
      * Return a class when its parents are requested and not found.
@@ -103,16 +84,7 @@ class Repository
      */
     public function hasDependency(string $name): bool
     {
-        if (array_key_exists($name, $this->aliases)) {
-            return $this->hasDependency($this->aliases[$name]);
-        }
-        if (array_key_exists($name, $this->redirects)) {
-            return $this->redirects[$name]->hasDependency($name);
-        }
         $result = $this->resolve($name);
-        if (array_key_exists($result, $this->redirects)) {
-            return $this->redirects[$result]->hasDependency($result);
-        }
         return $result !== null;
     }
 
@@ -122,15 +94,6 @@ class Repository
     public function hasValue(string $name): bool
     {
         return $this->require($name)->has();
-    }
-
-    /**
-     * Redirect a dependency name to another repository.
-     */
-    public function redirect(string $name, Repository $repository): static
-    {
-        $this->redirects[$name] = $repository;
-        return $this;
     }
 
     /**
@@ -200,16 +163,7 @@ class Repository
      */
     protected function require(string $name): DependencyInterface
     {
-        if (array_key_exists($name, $this->aliases)) {
-            return $this->require($this->aliases[$name]);
-        }
-        if (array_key_exists($name, $this->redirects)) {
-            return $this->redirects[$name]->require($name);
-        }
         $result = $this->resolve($name);
-        if (array_key_exists($result, $this->redirects)) {
-            return $this->redirects[$result]->require($result);
-        }
         if ($result === null) {
             $message = sprintf('Dependency "%s" not found.', $name);
             throw new RuntimeException($message);

@@ -350,7 +350,6 @@ Roaaaaaar!
 
 ## Next features
 
-| Feature | Description |
-| ------ | ----------- |
-| `Resolver::alias()` | Alias a dependency name |
-| `Resolver::redirect()` | Assign another repository to handle a dependency name |
+- Redirect dependencies with aliases;
+- Redirect dependencies with rules;
+- Resolve parameters by name.
