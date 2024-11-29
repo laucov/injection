@@ -109,7 +109,11 @@ class Repository
         if (array_key_exists($name, $this->redirects)) {
             return $this->redirects[$name]->hasDependency($name);
         }
-        return $this->resolve($name) !== null;
+        $result = $this->resolve($name);
+        if (array_key_exists($result, $this->redirects)) {
+            return $this->redirects[$result]->hasDependency($result);
+        }
+        return $result !== null;
     }
 
     /**
@@ -203,6 +207,9 @@ class Repository
             return $this->redirects[$name]->require($name);
         }
         $result = $this->resolve($name);
+        if (array_key_exists($result, $this->redirects)) {
+            return $this->redirects[$result]->require($result);
+        }
         if ($result === null) {
             $message = sprintf('Dependency "%s" not found.', $name);
             throw new RuntimeException($message);

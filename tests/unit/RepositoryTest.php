@@ -55,6 +55,8 @@ class RepositoryTest extends TestCase
      * @covers ::alias
      * @covers ::hasDependency
      * @covers ::require
+     * @uses Laucov\Injection\Repository::fallback
+     * @uses Laucov\Injection\Repository::find
      * @uses Laucov\Injection\Repository::getValue
      * @uses Laucov\Injection\Repository::redirect
      * @uses Laucov\Injection\Repository::require
@@ -65,18 +67,26 @@ class RepositoryTest extends TestCase
      */
     public function testCreatesAliases(): void
     {
+        $owl = new Owl;
         $repository = new Repository;
-        $repository->setValue('string', 'Hello, World!');
+        $repository
+            ->setValue('string', 'Hello, World!')
+            ->setValue(Owl::class, $owl);
         $this->repo
             ->setValue('string', 'Hi, Universe!')
             ->setValue('int', 654321)
             ->redirect('string', $repository)
+            ->redirect(Owl::class, $repository)
             ->alias('string', 'text')
-            ->alias('int', 'integer');
+            ->alias('int', 'integer')
+            ->alias(Bird::class, 'bird')
+            ->fallback(Owl::class);
         $this->assertTrue($this->repo->hasDependency('text'));
         $this->assertTrue($this->repo->hasDependency('integer'));
+        $this->assertTrue($this->repo->hasDependency('bird'));
         $this->assertSame('Hello, World!', $this->repo->getValue('text'));
         $this->assertSame(654321, $this->repo->getValue('integer'));
+        $this->assertSame($owl, $this->repo->getValue('bird'));
     }
 
     /**
@@ -166,6 +176,8 @@ class RepositoryTest extends TestCase
      * @covers ::hasDependency
      * @covers ::redirect
      * @covers ::require
+     * @uses Laucov\Injection\Repository::fallback
+     * @uses Laucov\Injection\Repository::find
      * @uses Laucov\Injection\Repository::getValue
      * @uses Laucov\Injection\Repository::resolve
      * @uses Laucov\Injection\Repository::setValue
@@ -174,18 +186,25 @@ class RepositoryTest extends TestCase
      */
     public function testRedirects(): void
     {
+        $lion = new Lion;
         $repository = new Repository;
         $repository
             ->setValue('string', 'Hello, World!')
-            ->setValue('int', 123456);
+            ->setValue('int', 123456)
+            ->setValue(Lion::class, $lion);
         $this->repo
             ->setValue('string', 'Hi, Universe!')
             ->setValue('int', 654321)
-            ->redirect('string', $repository);
+            ->redirect('string', $repository)
+            ->redirect(Lion::class, $repository)
+            ->fallback(Lion::class);
         $this->assertTrue($this->repo->hasDependency('string'));
         $this->assertTrue($this->repo->hasDependency('int'));
+        $this->assertTrue($this->repo->hasDependency(Animal::class));
+        $this->assertTrue($this->repo->hasDependency(Animal::class));
         $this->assertSame('Hello, World!', $this->repo->getValue('string'));
         $this->assertSame(654321, $this->repo->getValue('int'));
+        $this->assertSame($lion, $this->repo->getValue(Animal::class));
     }
 
     /**
@@ -290,7 +309,7 @@ abstract class Bird extends Animal
     public abstract function sing(): string;
 }
 
-abstract class Mammal
+abstract class Mammal extends Animal
 {
     public abstract function yell(): string;
 }

@@ -287,7 +287,7 @@ abstract class Bird extends Animal
     public abstract function sing(): string;
 }
 
-abstract class Mammal
+abstract class Mammal extends Animal
 {
     public abstract function yell(): string;
 }
