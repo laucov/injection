@@ -120,9 +120,9 @@ class RepositoryTest extends TestCase
     {
         $custom_a = $this->createMock(DependencyInterface::class);
         $custom_a
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(5))
             ->method('has')
-            ->willReturnOnConsecutiveCalls(true, true, false);
+            ->willReturnOnConsecutiveCalls(true, true, true, true, false);
         $custom_a
             ->expects($this->exactly(2))
             ->method('get')
@@ -133,9 +133,9 @@ class RepositoryTest extends TestCase
             ->method('get')
             ->willReturn(42);
         $custom_b
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(3))
             ->method('has')
-            ->willReturnOnConsecutiveCalls(true, false);
+            ->willReturnOnConsecutiveCalls(true, true, false);
         $custom_c = $this->createMock(DependencyInterface::class);
         $custom_c
             ->expects($this->once())
@@ -151,9 +151,9 @@ class RepositoryTest extends TestCase
             ->method('get')
             ->willReturn(99);
         $custom_d
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(3))
             ->method('has')
-            ->willReturnOnConsecutiveCalls(true, false);
+            ->willReturnOnConsecutiveCalls(true, true, false);
         $this->repo
             ->setCustom('string', $custom_a)
             ->setCustom('int', $custom_b)
@@ -176,6 +176,30 @@ class RepositoryTest extends TestCase
     }
 
     /**
+     * @covers ::getValue
+     * @uses Laucov\Injection\Repository::require
+     * @uses Laucov\Injection\Repository::resolve
+     * @uses Laucov\Injection\Repository::setCustom
+     */
+    public function testPanicsIfCannotGetValue(): void
+    {
+        $dependency = $this->createMock(DependencyInterface::class);
+        $dependency
+            ->expects($this->exactly(2))
+            ->method('has')
+            ->willReturn(true, false);
+        $dependency
+            ->expects($this->once())
+            ->method('get')
+            ->willReturn('foobar');
+        $this->repo->setCustom('foobar', $dependency);
+        $this->repo->getValue('foobar');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('No more values in dependency "foobar".');
+        $this->repo->getValue('foobar');
+    }
+
+    /**
      * @covers ::require
      * @uses Laucov\Injection\Repository::find
      * @uses Laucov\Injection\Repository::hasValue
@@ -184,7 +208,7 @@ class RepositoryTest extends TestCase
      * @uses Laucov\Injection\Repository::resolve
      * @dataProvider provideBreakableMethods
      */
-    public function testPanicsIfCanRequireDependencies(string $method): void
+    public function testPanicsIfDependencyIsNotFound(string $method): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Dependency "string" not found.');

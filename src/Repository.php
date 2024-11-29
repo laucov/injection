@@ -97,7 +97,13 @@ class Repository
      */
     public function getValue(string $name): mixed
     {
-        return $this->require($name)->get();
+        $dependency = $this->require($name);
+        if ($dependency->has($name)) {
+            return $dependency->get($name);
+        } else {
+            $message = sprintf('No more values in dependency "%s".', $name);
+            throw new RuntimeException($message);
+        }
     }
 
     /**
