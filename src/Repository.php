@@ -37,6 +37,13 @@ use RuntimeException;
 class Repository
 {
     /**
+     * Registered aliases.
+     * 
+     * @var array<string, string>
+     */
+    protected array $aliases = [];
+
+    /**
      * Registered dependencies.
      * 
      * @var array<string, DependencyInterface>
@@ -44,18 +51,27 @@ class Repository
     protected array $dependencies = [];
 
     /**
-     * Fallback classes.
+     * Registered fallback classes.
      * 
      * @var array<string>
      */
     public array $fallbacks = [];
 
     /**
-     * Redirections.
+     * Registered redirections.
      * 
      * @var array<string, Repository>
      */
     public array $redirects = [];
+
+    /**
+     * Set an alias to a dependency name.
+     */
+    public function alias(string $name, string $alias): static
+    {
+        $this->aliases[$alias] = $name;
+        return $this;
+    }
 
     /**
      * Return a class when its parents are requested and not found.
@@ -87,6 +103,9 @@ class Repository
      */
     public function hasDependency(string $name): bool
     {
+        if (array_key_exists($name, $this->aliases)) {
+            return $this->hasDependency($this->aliases[$name]);
+        }
         if (array_key_exists($name, $this->redirects)) {
             return $this->redirects[$name]->hasDependency($name);
         }
@@ -177,6 +196,9 @@ class Repository
      */
     protected function require(string $name): DependencyInterface
     {
+        if (array_key_exists($name, $this->aliases)) {
+            return $this->require($this->aliases[$name]);
+        }
         if (array_key_exists($name, $this->redirects)) {
             return $this->redirects[$name]->require($name);
         }

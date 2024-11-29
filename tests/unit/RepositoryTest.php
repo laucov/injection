@@ -52,6 +52,34 @@ class RepositoryTest extends TestCase
     }
 
     /**
+     * @covers ::alias
+     * @covers ::hasDependency
+     * @covers ::require
+     * @uses Laucov\Injection\Repository::getValue
+     * @uses Laucov\Injection\Repository::redirect
+     * @uses Laucov\Injection\Repository::require
+     * @uses Laucov\Injection\Repository::resolve
+     * @uses Laucov\Injection\Repository::setValue
+     * @uses Laucov\Injection\ValueDependency::__construct
+     * @uses Laucov\Injection\ValueDependency::get
+     */
+    public function testCreatesAliases(): void
+    {
+        $repository = new Repository;
+        $repository->setValue('string', 'Hello, World!');
+        $this->repo
+            ->setValue('string', 'Hi, Universe!')
+            ->setValue('int', 654321)
+            ->redirect('string', $repository)
+            ->alias('string', 'text')
+            ->alias('int', 'integer');
+        $this->assertTrue($this->repo->hasDependency('text'));
+        $this->assertTrue($this->repo->hasDependency('integer'));
+        $this->assertSame('Hello, World!', $this->repo->getValue('text'));
+        $this->assertSame(654321, $this->repo->getValue('integer'));
+    }
+
+    /**
      * @covers ::getValue
      * @covers ::getValues
      * @covers ::hasValue
